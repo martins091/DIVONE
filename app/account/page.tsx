@@ -2,8 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { LogOut, Package, User, Settings } from 'lucide-react';
+import { supabase } from '@/lib/supabase/client';
 
 interface Order {
   id: string;
@@ -15,6 +17,7 @@ interface Order {
 }
 
 export default function AccountPage() {
+  const router = useRouter();
   const [user, setUser] = useState<any>(null);
   const [orders, setOrders] = useState<Order[]>([
     {
@@ -38,26 +41,32 @@ export default function AccountPage() {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check if user is logged in
-    const token = localStorage.getItem('token');
-    if (!token) {
-      window.location.href = '/login';
-      return;
-    }
+    const loadUser = async () => {
+      const { data, error } = await supabase.auth.getUser();
 
-    // Mock user data
-    setUser({
-      name: 'Sarah Johnson',
-      email: 'sarah@example.com',
-      phone: '+1 (555) 123-4567',
-      address: '123 Fashion Street, NY 10001',
-    });
-    setLoading(false);
-  }, []);
+      if (error || !data.user) {
+        router.push('/login');
+        return;
+      }
 
-  const handleLogout = () => {
-    localStorage.removeItem('token');
-    window.location.href = '/login';
+      const metadata = data.user.user_metadata;
+
+      setUser({
+        name: metadata?.full_name || `${metadata?.first_name || ''} ${metadata?.last_name || ''}`.trim() || data.user.email,
+        email: data.user.email,
+        phone: metadata?.phone || 'Not provided',
+        address: metadata?.address || 'Not provided',
+      });
+      setLoading(false);
+    };
+
+    loadUser();
+  }, [router]);
+
+  const handleLogout = async () => {
+    await supabase.auth.signOut();
+    router.push('/login');
+    router.refresh();
   };
 
   if (loading) {

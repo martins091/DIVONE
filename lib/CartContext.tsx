@@ -1,6 +1,7 @@
 'use client';
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/lib/supabase/client';
 
 interface CartItem {
   _id: string;
@@ -10,6 +11,7 @@ interface CartItem {
   quantity: number;
   size?: string;
   color?: string;
+  image?: string;
 }
 
 interface CartContextType {
@@ -38,7 +40,9 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchCart = async () => {
     try {
-      const token = localStorage.getItem('token');
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+
       if (!token) return;
 
       const res = await fetch('/api/cart', {

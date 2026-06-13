@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/lib/models/User';
-import { comparePassword, generateToken } from '@/lib/auth';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
-
     const { email, password } = await req.json();
 
     if (!email || !password) {
@@ -16,34 +12,29 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const user = await User.findOne({ email });
-    if (!user) {
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.signInWithPassword({
+      email,
+      password,
+    });
+
+    if (error || !data.user || !data.session) {
       return NextResponse.json(
-        { error: 'Invalid email or password' },
+        { error: error?.message || 'Invalid email or password' },
         { status: 401 }
       );
     }
-
-    const isPasswordValid = await comparePassword(password, user.password);
-    if (!isPasswordValid) {
-      return NextResponse.json(
-        { error: 'Invalid email or password' },
-        { status: 401 }
-      );
-    }
-
-    const token = generateToken(user._id.toString());
 
     return NextResponse.json(
       {
         message: 'Login successful',
         user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
+          id: data.user.id,
+          firstName: data.user.user_metadata?.first_name,
+          lastName: data.user.user_metadata?.last_name,
+          email: data.user.email,
         },
-        token,
+        token: data.session.access_token,
       },
       { status: 200 }
     );

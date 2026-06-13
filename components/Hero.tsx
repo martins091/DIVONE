@@ -2,74 +2,108 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Sparkles, Crown, Play } from 'lucide-react';
 
 export default function Hero() {
   return (
-    <section className="relative w-full h-screen flex items-center justify-center overflow-hidden pt-20">
-      {/* Background gradient */}
-      <div className="absolute inset-0 bg-gradient-to-br from-background via-secondary to-background -z-10" />
-      
-      {/* Decorative elements */}
-      <motion.div
-        className="absolute top-20 right-10 w-72 h-72 bg-accent/10 rounded-full blur-3xl"
-        animate={{ y: [0, 30, 0] }}
-        transition={{ duration: 8, repeat: Infinity }}
-      />
-      <motion.div
-        className="absolute bottom-20 left-10 w-72 h-72 bg-accent/5 rounded-full blur-3xl"
-        animate={{ y: [0, -30, 0] }}
-        transition={{ duration: 8, repeat: Infinity, delay: 1 }}
-      />
+    <section className="relative w-full h-screen flex items-center justify-center overflow-hidden">
+      {/* Background Image */}
+      <div className="absolute inset-0 z-0">
+        <img
+          src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop"
+          alt="Luxury fashion model"
+          className="w-full h-full object-cover object-center"
+        />
+        {/* Gradient overlays */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/60" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+      </div>
 
       {/* Content */}
-      <div className="relative z-10 max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-        >
-          <p className="text-accent font-medium mb-4 uppercase tracking-widest">Welcome to Luxury</p>
-          <h1 className="font-serif text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
-            Exquisite Elegance
-          </h1>
-          <p className="text-xl text-foreground/70 mb-8 max-w-2xl mx-auto leading-relaxed">
-            Discover our curated collection of premium fashion for the sophisticated woman. Each piece crafted with meticulous attention to detail.
-          </p>
-        </motion.div>
-
-        <motion.div
-          className="flex flex-col sm:flex-row gap-4 justify-center"
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8, delay: 0.2 }}
-        >
-          <Link
-            href="/shop"
-            className="inline-flex items-center justify-center px-8 py-4 bg-accent text-accent-foreground font-medium rounded hover:bg-accent/90 transition-all group"
+      <div className="relative z-10 max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="grid lg:grid-cols-2 gap-12 items-center">
+          {/* Left side - Text content */}
+          <motion.div
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-left"
           >
-            Shop Now
-            <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={20} />
-          </Link>
-          <Link
-            href="/about"
-            className="inline-flex items-center justify-center px-8 py-4 border-2 border-foreground text-foreground font-medium rounded hover:bg-foreground hover:text-background transition-all"
-          >
-            Learn More
-          </Link>
-        </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.2 }}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 mb-6"
+            >
+              <Crown className="w-4 h-4 text-accent" />
+              <span className="text-white/80 text-sm tracking-wider">DIVONE COLLECTION</span>
+            </motion.div>
 
-        {/* Scroll indicator */}
-        <motion.div
-          className="absolute bottom-10 left-1/2 transform -translate-x-1/2"
-          animate={{ y: [0, 10, 0] }}
-          transition={{ duration: 2, repeat: Infinity }}
-        >
-          <div className="w-6 h-10 border-2 border-foreground rounded-full flex items-start justify-center p-2">
-            <div className="w-1 h-2 bg-foreground rounded-full animate-pulse" />
-          </div>
-        </motion.div>
+            <motion.h1
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.3 }}
+              className="font-serif text-5xl md:text-7xl font-bold mb-6"
+            >
+              <span className="text-white">Define Your</span>
+              <br />
+              <span className="bg-gradient-to-r from-accent via-white to-accent bg-clip-text text-transparent">
+                Elegance
+              </span>
+            </motion.h1>
+
+            <motion.p
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.4 }}
+              className="text-white/70 text-lg mb-8 max-w-lg leading-relaxed"
+            >
+              Experience the pinnacle of luxury fashion. Each garment tells a story of craftsmanship, 
+              passion, and timeless beauty.
+            </motion.p>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.5 }}
+              className="flex flex-col sm:flex-row gap-4"
+            >
+              <Link
+                href="/shop"
+                className="group inline-flex items-center justify-center px-8 py-4 bg-accent text-white font-medium rounded-full hover:bg-accent/90 transition-all hover:scale-105 hover:shadow-xl"
+              >
+                Explore Collection
+                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={18} />
+              </Link>
+              <Link
+                href="/about"
+                className="inline-flex items-center justify-center px-8 py-4 border-2 border-white/30 text-white font-medium rounded-full hover:bg-white hover:text-black transition-all backdrop-blur-sm"
+              >
+                <Play className="mr-2" size={16} />
+                Our Story
+              </Link>
+            </motion.div>
+          </motion.div>
+
+          {/* Right side - Empty or decorative element */}
+          <div className="hidden lg:block" />
+        </div>
       </div>
+
+      {/* Scroll indicator */}
+      <motion.div
+        className="absolute bottom-8 left-1/2 transform -translate-x-1/2 cursor-pointer z-10"
+        animate={{ y: [0, 10, 0] }}
+        transition={{ duration: 2, repeat: Infinity }}
+        onClick={() => window.scrollTo({ top: window.innerHeight, behavior: 'smooth' })}
+      >
+        <div className="flex flex-col items-center gap-2">
+          <span className="text-white/50 text-xs tracking-wider">SCROLL</span>
+          <div className="w-5 h-8 border-2 border-white/30 rounded-full flex justify-center">
+            <div className="w-1 h-2 bg-white/50 rounded-full mt-1 animate-bounce" />
+          </div>
+        </div>
+      </motion.div>
     </section>
   );
 }

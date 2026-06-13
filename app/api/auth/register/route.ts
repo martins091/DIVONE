@@ -1,12 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import User from '@/lib/models/User';
-import { hashPassword, generateToken } from '@/lib/auth';
+import { createSupabaseServerClient } from '@/lib/supabase/server';
 
 export async function POST(req: NextRequest) {
   try {
-    await connectDB();
-
     const { firstName, lastName, email, password, confirmPassword } = await req.json();
 
     if (!firstName || !lastName || !email || !password || !confirmPassword) {
@@ -23,34 +19,36 @@ export async function POST(req: NextRequest) {
       );
     }
 
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return NextResponse.json(
-        { error: 'Email already registered' },
-        { status: 409 }
-      );
-    }
-
-    const hashedPassword = await hashPassword(password);
-    const user = await User.create({
-      firstName,
-      lastName,
+    const supabase = await createSupabaseServerClient();
+    const { data, error } = await supabase.auth.signUp({
       email,
-      password: hashedPassword,
+      password,
+      options: {
+        data: {
+          first_name: firstName,
+          last_name: lastName,
+          full_name: `${firstName} ${lastName}`.trim(),
+        },
+      },
     });
 
-    const token = generateToken(user._id.toString());
+    if (error || !data.user) {
+      return NextResponse.json(
+        { error: error?.message || 'Registration failed' },
+        { status: 400 }
+      );
+    }
 
     return NextResponse.json(
       {
         message: 'User registered successfully',
         user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
+          id: data.user.id,
+          firstName: data.user.user_metadata?.first_name,
+          lastName: data.user.user_metadata?.last_name,
+          email: data.user.email,
         },
-        token,
+        token: data.session?.access_token,
       },
       { status: 201 }
     );

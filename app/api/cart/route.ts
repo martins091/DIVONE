@@ -1,27 +1,20 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Cart from '@/lib/models/Cart';
-import { getUserIdFromToken } from '@/lib/auth';
+import { getSupabaseUserFromBearerToken } from '@/lib/supabase/server';
 
 export async function GET(req: NextRequest) {
   try {
     await connectDB();
 
-    const token = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
+    const { user, error } = await getSupabaseUserFromBearerToken(req.headers.get('authorization'));
+    if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error },
         { status: 401 }
       );
     }
-
-    const userId = getUserIdFromToken(token);
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    const userId = user.id;
 
     const cart = await Cart.findOne({ userId });
 
@@ -45,21 +38,14 @@ export async function POST(req: NextRequest) {
   try {
     await connectDB();
 
-    const token = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
+    const { user, error } = await getSupabaseUserFromBearerToken(req.headers.get('authorization'));
+    if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error },
         { status: 401 }
       );
     }
-
-    const userId = getUserIdFromToken(token);
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    const userId = user.id;
 
     const { productId, productName, price, quantity, size, color, image } = await req.json();
 

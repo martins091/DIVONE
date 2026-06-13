@@ -1,30 +1,24 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectDB from '@/lib/db';
 import Cart from '@/lib/models/Cart';
-import { getUserIdFromToken } from '@/lib/auth';
+import { getSupabaseUserFromBearerToken } from '@/lib/supabase/server';
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
     await connectDB();
+    const { itemId } = await params;
 
-    const token = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
+    const { user, error } = await getSupabaseUserFromBearerToken(req.headers.get('authorization'));
+    if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error },
         { status: 401 }
       );
     }
-
-    const userId = getUserIdFromToken(token);
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    const userId = user.id;
 
     const { quantity } = await req.json();
 
@@ -36,7 +30,7 @@ export async function PUT(
       );
     }
 
-    const item = cart.items.id(params.itemId);
+    const item = cart.items.id(itemId);
     if (!item) {
       return NextResponse.json(
         { error: 'Item not found in cart' },
@@ -65,26 +59,20 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: { itemId: string } }
+  { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
     await connectDB();
+    const { itemId } = await params;
 
-    const token = req.headers.get('authorization')?.replace('Bearer ', '');
-    if (!token) {
+    const { user, error } = await getSupabaseUserFromBearerToken(req.headers.get('authorization'));
+    if (!user) {
       return NextResponse.json(
-        { error: 'Unauthorized' },
+        { error },
         { status: 401 }
       );
     }
-
-    const userId = getUserIdFromToken(token);
-    if (!userId) {
-      return NextResponse.json(
-        { error: 'Invalid token' },
-        { status: 401 }
-      );
-    }
+    const userId = user.id;
 
     const cart = await Cart.findOne({ userId });
     if (!cart) {
@@ -94,7 +82,7 @@ export async function DELETE(
       );
     }
 
-    cart.items.id(params.itemId).deleteOne();
+    cart.items.id(itemId).deleteOne();
     await cart.save();
 
     return NextResponse.json(
