@@ -10,7 +10,7 @@ const testimonials = [
     role: 'Fashion Enthusiast',
     content: 'The quality of pieces at DIVONE is unparalleled. Every item feels like an investment in elegance. The attention to detail and customer service is exceptional.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=200&auto=format',
+    image: 'mainpink1.jpeg',
     location: 'New York, USA',
   },
   {
@@ -18,7 +18,7 @@ const testimonials = [
     role: 'Executive Director',
     content: 'I recommend DIVONE to all my colleagues. The collections are sophisticated and timeless. Finally, a brand that understands modern professional women.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?q=80&w=200&auto=format',
+    image: 'blog3.jpeg',
     location: 'London, UK',
   },
   {
@@ -26,7 +26,7 @@ const testimonials = [
     role: 'Celebrity Stylist',
     content: 'DIVONE understands luxury fashion better than anyone. Their curation is impeccable and the craftsmanship is world-class. Absolutely stunning pieces.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?q=80&w=200&auto=format',
+    image: 'blog6.jpeg',
     location: 'Los Angeles, USA',
   },
   {
@@ -34,7 +34,7 @@ const testimonials = [
     role: 'Creative Director',
     content: 'As someone who appreciates fine craftsmanship, DIVONE has exceeded my expectations. The pieces are not just clothing, they\'re works of art.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1580489944761-15a19d654956?q=80&w=200&auto=format',
+    image: 'blog5.jpeg',
     location: 'Lagos, Nigeria',
   },
   {
@@ -42,7 +42,7 @@ const testimonials = [
     role: 'Luxury Blogger',
     content: 'DIVONE has become my go-to for statement pieces. The quality is unmatched and every purchase feels special. Truly a premium experience.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?q=80&w=200&auto=format',
+    image: 'blog6.jpeg',
     location: 'São Paulo, Brazil',
   },
   {
@@ -50,7 +50,7 @@ const testimonials = [
     role: 'Fashion Editor',
     content: 'The attention to detail in every DIVONE piece is remarkable. It\'s refreshing to see a brand that prioritizes quality over quantity.',
     rating: 5,
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?q=80&w=200&auto=format',
+    image: 'mainpink1.jpeg',
     location: 'Singapore',
   },
 ];

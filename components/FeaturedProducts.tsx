@@ -33,18 +33,21 @@ export default function FeaturedProducts() {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const fetchFeaturedProducts = async () => {
+    const fetchProducts = async () => {
       try {
-        const response = await fetch('/api/products?featured=true');
-        const data = await response.json();
+        // Fetch featured products first
+        const featuredResponse = await fetch('/api/products?featured=true');
+        const featuredData = await featuredResponse.json();
 
-        if (response.ok && data.products) {
-          // Map the API response to our product format
-          const mappedProducts = data.products.map((p: any) => ({
+        let allProducts: Product[] = [];
+
+        if (featuredResponse.ok && featuredData.products) {
+          // Map featured products
+          const mappedFeatured = featuredData.products.map((p: any) => ({
             id: p.id || p._id,
             _id: p._id,
             name: p.name,
-            price: p.price / 1000, // Convert from backend format
+            price: p.price / 1000,
             originalPrice: p.originalPrice ? p.originalPrice / 1000 : null,
             category: p.category,
             rating: p.rating || 5,
@@ -60,20 +63,62 @@ export default function FeaturedProducts() {
             isFeatured: p.isFeatured || false,
             description: p.description,
           }));
-          
-          setProducts(mappedProducts);
-        } else {
-          throw new Error('Failed to load featured products');
+
+          allProducts = [...mappedFeatured];
         }
+
+        // If we have fewer than 4 featured products, fetch additional products
+        if (allProducts.length < 4) {
+          const limit = Math.max(8 - allProducts.length, 4);
+          const recentResponse = await fetch(`/api/products?limit=${limit}&sort=createdAt:desc`);
+          const recentData = await recentResponse.json();
+
+          if (recentResponse.ok && recentData.products) {
+            const mappedRecent = recentData.products.map((p: any) => ({
+              id: p.id || p._id,
+              _id: p._id,
+              name: p.name,
+              price: p.price / 1000,
+              originalPrice: p.originalPrice ? p.originalPrice / 1000 : null,
+              category: p.category,
+              rating: p.rating || 5,
+              reviewCount: p.reviewCount || Math.floor(Math.random() * 100) + 10,
+              image: p.image && p.image.startsWith('linear') 
+                ? `https://via.placeholder.com/600x800?text=${encodeURIComponent(p.name)}`
+                : p.image || `https://via.placeholder.com/600x800?text=${encodeURIComponent(p.name)}`,
+              images: p.images || [],
+              sizes: p.sizes || ['S', 'M', 'L'],
+              colors: p.colors || ['Default'],
+              stock: p.stock || 10,
+              isNew: p.isNew || !p.originalPrice,
+              isFeatured: p.isFeatured || false,
+              description: p.description,
+            }));
+
+            // Merge and deduplicate
+            const existingIds = new Set(allProducts.map(p => p.id));
+            const newProducts = mappedRecent.filter((p: Product) => !existingIds.has(p.id));
+            allProducts = [...allProducts, ...newProducts];
+          }
+        }
+
+        // Sort: Featured first, then by date
+        allProducts.sort((a, b) => {
+          if (a.isFeatured && !b.isFeatured) return -1;
+          if (!a.isFeatured && b.isFeatured) return 1;
+          return 0;
+        });
+
+        setProducts(allProducts);
       } catch (error) {
-        console.error('Error fetching featured products:', error);
-        setError('Failed to load featured products. Please try again.');
+        console.error('Error fetching products:', error);
+        setError('Failed to load products. Please try again.');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFeaturedProducts();
+    fetchProducts();
   }, []);
 
   const scroll = (direction: 'left' | 'right') => {
@@ -151,7 +196,7 @@ export default function FeaturedProducts() {
           <h2 className="font-serif text-4xl md:text-5xl font-bold text-foreground mb-4">
             Bestsellers
           </h2>
-          <p className="text-foreground/60">No featured products available.</p>
+          <p className="text-foreground/60">No products available.</p>
         </div>
       </section>
     );

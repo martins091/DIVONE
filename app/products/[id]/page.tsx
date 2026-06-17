@@ -80,6 +80,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         setProduct(mappedProduct);
         setSelectedSize(mappedProduct.sizes?.[0] || 'One Size');
         setSelectedColor(mappedProduct.colors?.[0] || 'Default');
+        setActiveImage(0); // Reset to first image
       } catch (error) {
         console.error('Error fetching product:', error);
         setError(error instanceof Error ? error.message : 'Failed to load product');
@@ -124,6 +125,42 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
+  // Get the current image to display
+  const getCurrentImage = () => {
+    if (!product) return null;
+    
+    // If we have images array and it's not empty, use it
+    if (product.images && product.images.length > 0) {
+      return product.images[activeImage] || product.image;
+    }
+    
+    // Fallback to main image
+    return product.image;
+  };
+
+  // Get all available images (main + additional)
+  const getAllImages = () => {
+    if (!product) return [];
+    
+    const allImages = [];
+    
+    // Add main image if it exists and is valid
+    if (product.image && !product.image.startsWith('linear') && !product.image.includes('placeholder')) {
+      allImages.push(product.image);
+    }
+    
+    // Add additional images
+    if (product.images && product.images.length > 0) {
+      product.images.forEach(img => {
+        if (img && !allImages.includes(img)) {
+          allImages.push(img);
+        }
+      });
+    }
+    
+    return allImages;
+  };
+
   if (loading) {
     return (
       <div className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white min-h-screen flex items-center justify-center">
@@ -157,6 +194,9 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const totalSavings = savingsPerUnit * 1000 * quantity;
   const discountPercent = product.originalPrice ? Math.round((savingsPerUnit / product.originalPrice) * 100) : 0;
 
+  const currentImage = getCurrentImage();
+  const allImages = getAllImages();
+
   return (
     <div className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white min-h-screen">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -176,11 +216,11 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
             transition={{ duration: 0.8 }}
           >
             <div className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${getPlaceholderGradient()} aspect-square`}>
-              {product.image ? (
+              {currentImage && currentImage.startsWith('http') ? (
                 <img 
-                  src={product.image} 
+                  src={currentImage} 
                   alt={product.name} 
-                  className="w-full h-full object-cover"
+                  className="w-full h-full object-cover transition-opacity duration-300"
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -201,21 +241,32 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                   </span>
                 )}
               </div>
+
+              {/* Image counter */}
+              {allImages.length > 1 && (
+                <div className="absolute bottom-4 left-1/2 transform -translate-x-1/2 bg-black/50 backdrop-blur-sm text-white text-xs px-3 py-1 rounded-full">
+                  {activeImage + 1} / {allImages.length}
+                </div>
+              )}
             </div>
 
-            {/* Thumbnail images if available */}
-            {product.images && product.images.length > 0 && (
-              <div className="flex gap-3 mt-4">
-                {product.images.slice(0, 4).map((img, idx) => (
+            {/* Thumbnail images - Show ALL available images */}
+            {allImages.length > 1 && (
+              <div className="flex gap-3 mt-4 overflow-x-auto pb-2 scrollbar-hide">
+                {allImages.map((img, idx) => (
                   <button
                     key={idx}
                     onClick={() => setActiveImage(idx)}
-                    className={`w-20 h-20 rounded-lg overflow-hidden border-2 transition-all ${
-                      activeImage === idx ? 'border-accent' : 'border-transparent'
+                    className={`min-w-[80px] w-20 h-20 rounded-lg overflow-hidden border-2 transition-all flex-shrink-0 ${
+                      activeImage === idx ? 'border-accent shadow-lg' : 'border-transparent hover:border-gray-300'
                     }`}
                   >
                     {img.startsWith('http') ? (
-                      <img src={img} alt="" className="w-full h-full object-cover" />
+                      <img 
+                        src={img} 
+                        alt={`${product.name} - view ${idx + 1}`} 
+                        className="w-full h-full object-cover"
+                      />
                     ) : (
                       <div className="w-full h-full bg-gray-100 flex items-center justify-center">
                         <span className="text-xs text-gray-400">{idx + 1}</span>
@@ -262,7 +313,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <span className="text-green-600 text-sm">In Stock ({product.stock} units)</span>
             </div>
 
-            {/* Price - Updated to show total based on quantity */}
+            {/* Price */}
             <div className="border-t border-b border-gray-100 py-6">
               <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-4xl font-bold text-foreground">
@@ -289,7 +340,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               </p>
             </div>
 
-            {/* Subtotal preview - New section */}
+            {/* Subtotal preview */}
             {quantity > 1 && (
               <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
                 <p className="text-sm text-amber-800">
@@ -423,6 +474,16 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
           </motion.div>
         </div>
       </div>
+
+      <style jsx>{`
+        .scrollbar-hide::-webkit-scrollbar {
+          display: none;
+        }
+        .scrollbar-hide {
+          -ms-overflow-style: none;
+          scrollbar-width: none;
+        }
+      `}</style>
     </div>
   );
 }

@@ -38,6 +38,7 @@ export default function Navbar() {
     { name: 'Shop', href: '/shop' },
     { name: 'New Arrivals', href: '/shop?filter=new' },
     { name: 'About', href: '/about' },
+    { name: 'Blog', href: '/blogs' },
     { name: 'Contact', href: '/contact' },
   ];
 

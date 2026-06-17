@@ -8,7 +8,7 @@ const collections = [
   {
     title: 'Evening Wear',
     description: 'Timeless elegance for special occasions',
-    image: 'https://images.unsplash.com/photo-1566174053879-31528523f8ae?q=80&w=800&auto=format',
+    image: 'blog2.jpeg',
     category: 'evening-wear',
     color: 'from-amber-900/80 to-black/80',
     icon: Gem,
@@ -16,7 +16,7 @@ const collections = [
   {
     title: 'Casual Chic',
     description: 'Comfortable yet refined daily fashion',
-    image: 'https://images.unsplash.com/photo-1539109136881-3be0616acf4b?q=80&w=800&auto=format',
+    image: 'blog3.jpeg',
     category: 'casual-chic',
     color: 'from-rose-900/80 to-black/80',
     icon: Sparkles,
@@ -24,7 +24,7 @@ const collections = [
   {
     title: 'Accessories',
     description: 'Complete your look with luxury details',
-    image: 'https://images.unsplash.com/photo-1584917865442-de89df76afd3?q=80&w=800&auto=format',
+    image: 'blog4.jpeg',
     category: 'accessories',
     color: 'from-amber-900/80 to-black/80',
     icon: Gem,

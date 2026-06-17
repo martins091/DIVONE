@@ -10,13 +10,19 @@ export default function Hero() {
       {/* Background Image */}
       <div className="absolute inset-0 z-0">
         <img
-          src="https://images.unsplash.com/photo-1483985988355-763728e1935b?q=80&w=2070&auto=format&fit=crop"
+          src="/divone2.png"
           alt="Luxury fashion model"
-          className="w-full h-full object-cover object-center"
+          className="w-full h-full object-cover object-top"
         />
-        {/* Gradient overlays */}
-        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/50 to-black/60" />
-        <div className="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
+        
+        {/* Left side dark overlay - strong on left, fades to transparent on right */}
+        <div className="absolute inset-0 bg-gradient-to-r from-black/80 via-black/40 to-transparent" />
+        
+        {/* Bottom dark overlay - heavier on bottom, lighter on top */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent" />
+        
+        {/* Right side brightness boost - makes the right side lighter */}
+        <div className="absolute inset-0 bg-gradient-to-l from-white/20 via-white/5 to-transparent" />
       </div>
 
       {/* Content */}
