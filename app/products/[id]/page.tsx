@@ -149,8 +149,13 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     );
   }
 
-  const savings = product.originalPrice ? product.originalPrice - product.price : 0;
-  const discountPercent = product.originalPrice ? Math.round((savings / product.originalPrice) * 100) : 0;
+  const unitPrice = product.price * 1000;
+  const totalPrice = unitPrice * quantity;
+  const unitOriginalPrice = product.originalPrice ? product.originalPrice * 1000 : null;
+  const totalOriginalPrice = unitOriginalPrice ? unitOriginalPrice * quantity : null;
+  const savingsPerUnit = product.originalPrice ? product.originalPrice - product.price : 0;
+  const totalSavings = savingsPerUnit * 1000 * quantity;
+  const discountPercent = product.originalPrice ? Math.round((savingsPerUnit / product.originalPrice) * 100) : 0;
 
   return (
     <div className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white min-h-screen">
@@ -257,27 +262,41 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               <span className="text-green-600 text-sm">In Stock ({product.stock} units)</span>
             </div>
 
-            {/* Price */}
+            {/* Price - Updated to show total based on quantity */}
             <div className="border-t border-b border-gray-100 py-6">
-              <div className="flex items-baseline gap-3">
+              <div className="flex items-baseline gap-3 flex-wrap">
                 <span className="text-4xl font-bold text-foreground">
-                  {displayNaira(product.price * 1000)}
+                  {displayNaira(totalPrice)}
                 </span>
-                {product.originalPrice && (
+                {totalOriginalPrice && (
                   <>
                     <span className="text-xl text-gray-400 line-through">
-                      {displayNaira(product.originalPrice * 1000)}
+                      {displayNaira(totalOriginalPrice)}
                     </span>
                     <span className="text-accent font-medium">
-                      Save {displayNaira(savings * 1000)}
+                      Save {displayNaira(totalSavings)}
                     </span>
                   </>
                 )}
               </div>
+              {quantity > 1 && (
+                <p className="text-sm text-gray-400 mt-1">
+                  Unit price: {displayNaira(unitPrice)}
+                </p>
+              )}
               <p className="text-sm text-gray-500 mt-2">
                 Tax included. Free shipping on orders over ₦500,000
               </p>
             </div>
+
+            {/* Subtotal preview - New section */}
+            {quantity > 1 && (
+              <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
+                <p className="text-sm text-amber-800">
+                  Subtotal for {quantity} {quantity === 1 ? 'item' : 'items'}: <span className="font-bold">{displayNaira(totalPrice)}</span>
+                </p>
+              </div>
+            )}
 
             {/* Description */}
             <div>
@@ -367,7 +386,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
                     ? 'Out of Stock' 
                     : addedToCart 
                       ? 'Added to Cart!' 
-                      : 'Add to Cart'
+                      : `Add to Cart - ${displayNaira(totalPrice)}`
                   }
                 </button>
 

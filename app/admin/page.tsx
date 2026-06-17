@@ -1,72 +1,52 @@
-// app/admin/page.tsx
 'use client';
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { 
-  Package, 
-  ShoppingBag, 
-  Users, 
-  TrendingUp,
-  ArrowRight
-} from 'lucide-react';
+import { Package, ShoppingBag, Users, ArrowRight } from 'lucide-react';
+import { displayNaira } from '@/lib/currency';
+import { supabase } from '@/lib/supabase/client';
 
 export default function AdminLanding() {
   const [stats, setStats] = useState({
     products: 0,
     pendingOrders: 0,
     users: 0,
-    revenue: 0
+    revenue: 0,
   });
 
   useEffect(() => {
-    // Load stats from localStorage or API
-    const products = JSON.parse(localStorage.getItem('products') || '[]');
-    const orders = JSON.parse(localStorage.getItem('orders') || '[]');
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    
-    setStats({
-      products: products.length,
-      pendingOrders: orders.filter((o: any) => o.status === 'pending').length,
-      users: users.length,
-      revenue: orders.reduce((sum: number, o: any) => sum + o.total, 0)
-    });
+    const loadStats = async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
+
+      const response = await fetch('/api/admin/stats', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await response.json();
+
+      if (response.ok) {
+        setStats(result);
+      }
+    };
+
+    loadStats();
   }, []);
 
   const adminSections = [
-    {
-      title: 'Products',
-      description: 'Manage your product catalog',
-      icon: Package,
-      href: '/admin/products',
-      color: 'bg-blue-500',
-    },
-    {
-      title: 'Orders',
-      description: 'View and update orders',
-      icon: ShoppingBag,
-      href: '/admin/orders',
-      color: 'bg-green-500',
-    },
-    {
-      title: 'Users',
-      description: 'Manage customer accounts',
-      icon: Users,
-      href: '/admin/users',
-      color: 'bg-purple-500',
-    },
+    { title: 'Products', description: 'Manage your product catalog', icon: Package, href: '/admin/products', color: 'bg-blue-500' },
+    { title: 'Orders', description: 'View and update orders', icon: ShoppingBag, href: '/admin/orders', color: 'bg-green-500' },
+    { title: 'Users', description: 'Manage customer accounts', icon: Users, href: '/admin/users', color: 'bg-purple-500' },
   ];
 
   return (
     <div className="p-6">
-      {/* Page Title */}
       <div className="mb-6">
         <h1 className="text-2xl font-serif font-bold text-gray-800">Dashboard</h1>
         <p className="text-gray-500">Welcome to your store management center</p>
       </div>
 
-      {/* Quick Stats Preview */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <p className="text-gray-500 text-sm">Total Products</p>
@@ -82,11 +62,10 @@ export default function AdminLanding() {
         </div>
         <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
           <p className="text-gray-500 text-sm">Revenue</p>
-          <p className="text-2xl font-bold text-accent mt-1">${stats.revenue}</p>
+          <p className="text-2xl font-bold text-accent mt-1">{displayNaira(stats.revenue)}</p>
         </div>
       </div>
 
-      {/* Quick Access Grid */}
       <h2 className="text-xl font-semibold text-gray-800 mb-4">Quick Access</h2>
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {adminSections.map((section, index) => (
@@ -110,16 +89,6 @@ export default function AdminLanding() {
             </Link>
           </motion.div>
         ))}
-      </div>
-
-      {/* Recent Activity */}
-      <div className="mt-8">
-        <h2 className="text-xl font-semibold text-gray-800 mb-4">Recent Activity</h2>
-        <div className="bg-white rounded-xl shadow-sm border border-gray-100 p-6">
-          <p className="text-gray-500 text-center py-8">
-            Recent orders and activities will appear here
-          </p>
-        </div>
       </div>
     </div>
   );

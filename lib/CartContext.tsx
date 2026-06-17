@@ -17,10 +17,11 @@ interface CartItem {
 interface CartContextType {
   items: CartItem[];
   cartCount: number;
-  addToCart: (item: CartItem) => void;
-  removeFromCart: (itemId: string) => void;
-  updateQuantity: (itemId: string, quantity: number) => void;
-  clearCart: () => void;
+  isLoading: boolean;
+  addToCart: (item: CartItem) => Promise<void>;
+  removeFromCart: (itemId: string) => Promise<void>;
+  updateQuantity: (itemId: string, quantity: number) => Promise<void>;
+  clearCart: () => Promise<void>;
   fetchCart: () => Promise<void>;
 }
 
@@ -29,6 +30,7 @@ const CartContext = createContext<CartContextType | undefined>(undefined);
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
   const [cartCount, setCartCount] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     fetchCart();
@@ -40,10 +42,14 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
   const fetchCart = async () => {
     try {
-      const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      setIsLoading(true);
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
 
-      if (!token) return;
+      if (!token) {
+        setIsLoading(false);
+        return;
+      }
 
       const res = await fetch('/api/cart', {
         headers: { Authorization: `Bearer ${token}` }
@@ -51,45 +57,136 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
 
       if (res.ok) {
         const data = await res.json();
-        setItems(data.items || []);
+        // Extract items from the cart object
+        const cartItems = data.cart?.items || [];
+        setItems(cartItems);
       }
     } catch (error) {
-      console.log('[v0] Error fetching cart:', error);
+      console.log('Error fetching cart:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
-  const addToCart = (item: CartItem) => {
-    setItems(prev => {
-      const existing = prev.find(i => i._id === item._id);
-      if (existing) {
-        return prev.map(i =>
-          i._id === item._id ? { ...i, quantity: i.quantity + item.quantity } : i
-        );
+  const addToCart = async (item: CartItem) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (!token) {
+        console.error('No authenticated user');
+        return;
       }
-      return [...prev, item];
-    });
-  };
 
-  const removeFromCart = (itemId: string) => {
-    setItems(prev => prev.filter(i => i._id !== itemId));
-  };
+      const res = await fetch('/api/cart', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          productId: item.productId,
+          productName: item.name,
+          price: item.price,
+          quantity: item.quantity,
+          size: item.size,
+          color: item.color,
+          image: item.image,
+        })
+      });
 
-  const updateQuantity = (itemId: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeFromCart(itemId);
-    } else {
-      setItems(prev =>
-        prev.map(i => (i._id === itemId ? { ...i, quantity } : i))
-      );
+      if (res.ok) {
+        await fetchCart(); // Refresh cart from server
+      } else {
+        const error = await res.json();
+        console.error('Failed to add to cart:', error);
+      }
+    } catch (error) {
+      console.error('Error adding to cart:', error);
     }
   };
 
-  const clearCart = () => {
-    setItems([]);
+  const removeFromCart = async (itemId: string) => {
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (!token) {
+        console.error('No authenticated user');
+        return;
+      }
+
+      const res = await fetch(`/api/cart/${itemId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` }
+      });
+
+      if (res.ok) {
+        await fetchCart(); // Refresh cart from server
+      } else {
+        const error = await res.json();
+        console.error('Failed to remove from cart:', error);
+      }
+    } catch (error) {
+      console.error('Error removing from cart:', error);
+    }
+  };
+
+  const updateQuantity = async (itemId: string, quantity: number) => {
+    if (quantity <= 0) {
+      await removeFromCart(itemId);
+      return;
+    }
+
+    try {
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (!token) {
+        console.error('No authenticated user');
+        return;
+      }
+
+      const res = await fetch(`/api/cart/${itemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({ quantity })
+      });
+
+      if (res.ok) {
+        await fetchCart(); // Refresh cart from server
+      } else {
+        const error = await res.json();
+        console.error('Failed to update quantity:', error);
+      }
+    } catch (error) {
+      console.error('Error updating quantity:', error);
+    }
+  };
+
+  const clearCart = async () => {
+    // Optional: Implement batch delete if needed
+    for (const item of items) {
+      await removeFromCart(item._id);
+    }
   };
 
   return (
-    <CartContext.Provider value={{ items, cartCount, addToCart, removeFromCart, updateQuantity, clearCart, fetchCart }}>
+    <CartContext.Provider 
+      value={{ 
+        items, 
+        cartCount, 
+        isLoading,
+        addToCart, 
+        removeFromCart, 
+        updateQuantity, 
+        clearCart, 
+        fetchCart 
+      }}
+    >
       {children}
     </CartContext.Provider>
   );

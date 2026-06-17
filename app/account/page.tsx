@@ -12,31 +12,15 @@ interface Order {
   orderNumber: string;
   date: string;
   total: number;
-  status: 'pending' | 'confirmed' | 'shipped' | 'delivered';
+  status: 'pending' | 'confirmed' | 'shipped' | 'delivered' | 'cancelled';
+  paymentStatus: 'pending' | 'completed' | 'failed';
   items: number;
 }
 
 export default function AccountPage() {
   const router = useRouter();
   const [user, setUser] = useState<any>(null);
-  const [orders, setOrders] = useState<Order[]>([
-    {
-      id: '1',
-      orderNumber: 'ORD-2024-ABC123',
-      date: 'Dec 15, 2024',
-      total: 891,
-      status: 'delivered',
-      items: 2,
-    },
-    {
-      id: '2',
-      orderNumber: 'ORD-2024-DEF456',
-      date: 'Dec 10, 2024',
-      total: 450,
-      status: 'shipped',
-      items: 1,
-    },
-  ]);
+  const [orders, setOrders] = useState<Order[]>([]);
   const [activeTab, setActiveTab] = useState<'orders' | 'profile' | 'settings'>('orders');
   const [loading, setLoading] = useState(true);
 
@@ -57,6 +41,28 @@ export default function AccountPage() {
         phone: metadata?.phone || 'Not provided',
         address: metadata?.address || 'Not provided',
       });
+
+      const { data: sessionData } = await supabase.auth.getSession();
+      const token = sessionData.session?.access_token;
+
+      if (token) {
+        const response = await fetch('/api/orders', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+          setOrders((result.orders || []).map((order: any) => ({
+            id: order.id,
+            orderNumber: order.orderNumber,
+            date: new Date(order.createdAt).toLocaleDateString(),
+            total: order.total,
+            status: order.status,
+            paymentStatus: order.paymentStatus,
+            items: order.items?.length || 0,
+          })));
+        }
+      }
       setLoading(false);
     };
 
@@ -178,8 +184,10 @@ export default function AccountPage() {
                           <span className={`px-4 py-2 rounded font-medium text-sm ${
                             order.status === 'delivered'
                               ? 'bg-green-100 text-green-700'
-                              : order.status === 'shipped'
+                            : order.status === 'shipped'
                               ? 'bg-blue-100 text-blue-700'
+                            : order.status === 'cancelled'
+                              ? 'bg-red-100 text-red-700'
                               : 'bg-yellow-100 text-yellow-700'
                           }`}>
                             {order.status.charAt(0).toUpperCase() + order.status.slice(1)}
@@ -189,6 +197,9 @@ export default function AccountPage() {
                         <div className="flex justify-between items-center">
                           <div>
                             <p className="text-foreground/60 text-sm">{order.items} items</p>
+                            <p className="text-foreground/60 text-sm">
+                              Payment: {order.paymentStatus.charAt(0).toUpperCase() + order.paymentStatus.slice(1)}
+                            </p>
                           </div>
                           <div className="text-right">
                             <p className="font-bold text-foreground text-lg">${order.total}</p>

@@ -1,66 +1,22 @@
 'use client';
 
-import { useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import { Trash2, ArrowLeft } from 'lucide-react';
 import { displayNaira } from '@/lib/currency';
-
-interface CartItem {
-  id: string;
-  name: string;
-  price: number;
-  quantity: number;
-  size: string;
-  color: string;
-  image: string;
-}
+import { useCart } from '@/lib/CartContext';
 
 export default function CartPage() {
-  const [cartItems, setCartItems] = useState<CartItem[]>([
-    {
-      id: '1',
-      name: 'Silk Evening Gown',
-      price: 450,
-      quantity: 1,
-      size: 'M',
-      color: 'Black',
-      image: 'linear-gradient(135deg, #D4AF37 0%, #E8C4C4 100%)',
-    },
-    {
-      id: '2',
-      name: 'Premium Cashmere Scarf',
-      price: 180,
-      quantity: 2,
-      size: 'One Size',
-      color: 'Ivory',
-      image: 'linear-gradient(135deg, #F8F5F0 0%, #E8C4C4 100%)',
-    },
-  ]);
-
-  const updateQuantity = (id: string, quantity: number) => {
-    if (quantity <= 0) {
-      removeItem(id);
-      return;
-    }
-    setCartItems(cartItems.map(item =>
-      item.id === id ? { ...item, quantity } : item
-    ));
-  };
-
-  const removeItem = (id: string) => {
-    setCartItems(cartItems.filter(item => item.id !== id));
-  };
+  const { items: cartItems, isLoading, updateQuantity, removeFromCart } = useCart();
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const tax = subtotal * 0.1;
-  const shipping = subtotal > 150 ? 0 : 10;
+  const shipping = subtotal > 150000 ? 0 : cartItems.length ? 2500 : 0;
   const total = subtotal + tax + shipping;
 
   return (
     <div className="pt-32 pb-20 bg-background">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        {/* Header */}
         <motion.div
           className="mb-12"
           initial={{ opacity: 0, y: 20 }}
@@ -74,7 +30,9 @@ export default function CartPage() {
           <h1 className="font-serif text-5xl font-bold text-foreground">Your Cart</h1>
         </motion.div>
 
-        {cartItems.length === 0 ? (
+        {isLoading ? (
+          <div className="text-center py-20 text-foreground/60">Loading cart...</div>
+        ) : cartItems.length === 0 ? (
           <motion.div
             className="text-center py-20"
             initial={{ opacity: 0 }}
@@ -88,37 +46,36 @@ export default function CartPage() {
           </motion.div>
         ) : (
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-12">
-            {/* Cart Items */}
             <div className="lg:col-span-2 space-y-4">
               {cartItems.map((item, index) => (
                 <motion.div
-                  key={item.id}
+                  key={item._id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.8, delay: index * 0.1 }}
                   className="flex gap-6 bg-white rounded-lg p-6 border border-border"
                 >
-                  {/* Product Image */}
-                  <div
-                    className="w-32 h-32 rounded-lg flex-shrink-0"
-                    style={{ background: item.image }}
-                  />
+                  <div className="w-32 h-32 rounded-lg flex-shrink-0 overflow-hidden bg-secondary">
+                    {item.image?.startsWith('http') ? (
+                      <img src={item.image} alt={item.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="h-full w-full" style={{ background: item.image || 'linear-gradient(135deg, #D4AF37 0%, #E8C4C4 100%)' }} />
+                    )}
+                  </div>
 
-                  {/* Product Info */}
                   <div className="flex-1">
                     <h3 className="font-serif text-xl font-semibold text-foreground mb-2">
                       {item.name}
                     </h3>
                     <p className="text-foreground/60 text-sm mb-3">
-                      {item.color} • Size {item.size}
+                      {item.color || 'Default'} • Size {item.size || 'One Size'}
                     </p>
                     <p className="font-bold text-foreground">{displayNaira(item.price)}</p>
                   </div>
 
-                  {/* Quantity & Remove */}
                   <div className="flex flex-col items-end justify-between">
                     <button
-                      onClick={() => removeItem(item.id)}
+                      onClick={() => removeFromCart(item._id)}
                       className="p-2 hover:bg-red-50 rounded transition-colors text-red-500"
                     >
                       <Trash2 size={20} />
@@ -126,14 +83,14 @@ export default function CartPage() {
 
                     <div className="flex items-center gap-2 border border-border rounded">
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                        onClick={() => updateQuantity(item._id, item.quantity - 1)}
                         className="px-3 py-1 hover:bg-secondary/50 transition-colors"
                       >
                         -
                       </button>
                       <span className="font-semibold w-6 text-center">{item.quantity}</span>
                       <button
-                        onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                        onClick={() => updateQuantity(item._id, item.quantity + 1)}
                         className="px-3 py-1 hover:bg-secondary/50 transition-colors"
                       >
                         +
@@ -148,7 +105,6 @@ export default function CartPage() {
               ))}
             </div>
 
-            {/* Order Summary */}
             <motion.div
               className="lg:sticky lg:top-32 h-fit bg-white rounded-lg p-8 border border-border"
               initial={{ opacity: 0, x: 20 }}
@@ -178,19 +134,11 @@ export default function CartPage() {
               </div>
 
               <Link
-                href="/payment"
+                href="/checkout"
                 className="w-full block text-center py-4 bg-accent text-accent-foreground font-semibold rounded hover:bg-accent/90 transition-colors mb-3"
               >
-                Buy Now
+                Proceed to Checkout
               </Link>
-
-              <button className="w-full py-4 border-2 border-foreground text-foreground font-semibold rounded hover:bg-foreground hover:text-background transition-all">
-                Continue Shopping
-              </button>
-
-              {shipping === 0 && (
-                <p className="text-sm text-accent text-center mt-4">Free shipping applied!</p>
-              )}
             </motion.div>
           </div>
         )}

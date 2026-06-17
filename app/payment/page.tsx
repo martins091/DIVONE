@@ -1,40 +1,75 @@
 'use client';
 
-import { useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
+import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Copy, CheckCircle, Upload, AlertCircle } from 'lucide-react';
+import { Copy, CheckCircle, Upload, AlertCircle, ArrowRight, Clock, Banknote, User, Mail, Phone, MapPin } from 'lucide-react';
 import { displayNaira } from '@/lib/currency';
+import { supabase } from '@/lib/supabase/client';
 
 const BANK_DETAILS = {
-  accountName: 'Ogbaegbe Onyinyechi ',
+  accountName: 'Ogbaegbe Onyinyechi',
   bankName: 'Fidelity Bank',
   accountNumber: '6150341483',
 };
 
-export default function PaymentPage() {
+function PaymentContent() {
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const orderId = searchParams.get('orderId');
   const [copied, setCopied] = useState(false);
-  const [showPaymentForm, setShowPaymentForm] = useState(false);
-  const [uploadedFile, setUploadedFile] = useState<File | null>(null);
-  const [formData, setFormData] = useState({
-    fullName: '',
-    phone: '',
-    email: '',
-    transactionReference: '',
-  });
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [successMessage, setSuccessMessage] = useState('');
   const [errorMessage, setErrorMessage] = useState('');
+  const [successMessage, setSuccessMessage] = useState('');
+  const [orderData, setOrderData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [paymentStep, setPaymentStep] = useState<'details' | 'confirm' | 'processing'>('details');
+  const total = orderData ? orderData.total : 0;
 
-  // Mock order data - in production, this would come from URL params or session
-  const orderData = {
-    orderId: 'ORD-2024-' + Math.random().toString(36).substr(2, 9).toUpperCase(),
-    subtotal: 125000,
-    tax: 12500,
-    shipping: 2500,
-  };
+  useEffect(() => {
+    const loadOrder = async () => {
+      if (!orderId) {
+        setIsLoading(false);
+        return;
+      }
 
-  const total = orderData.subtotal + orderData.tax + orderData.shipping;
+      try {
+        const { data } = await supabase.auth.getSession();
+        const token = data.session?.access_token;
+        if (!token) {
+          router.push('/login');
+          return;
+        }
+
+        const response = await fetch(`/api/orders/${orderId}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        const result = await response.json();
+
+        if (response.ok) {
+          setOrderData(result.order);
+          // Check if payment was already confirmed
+          if (result.order.status === 'payment_pending_verification' || 
+              result.order.status === 'confirmed' || 
+              result.order.status === 'processing' ||
+              result.order.status === 'shipped' ||
+              result.order.status === 'delivered') {
+            setPaymentStep('processing');
+          }
+        } else {
+          setErrorMessage('Failed to load order details');
+        }
+      } catch (error) {
+        console.error('Error loading order:', error);
+        setErrorMessage('Failed to load order details');
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadOrder();
+  }, [orderId, router]);
 
   const copyAccountNumber = () => {
     navigator.clipboard.writeText(BANK_DETAILS.accountNumber);
@@ -42,81 +77,127 @@ export default function PaymentPage() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
-  };
-
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (file) {
-      setUploadedFile(file);
-    }
-  };
-
-  const handleSubmitPayment = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handlePaymentMade = async () => {
     setIsSubmitting(true);
     setErrorMessage('');
     setSuccessMessage('');
 
     try {
-      if (!uploadedFile) {
-        setErrorMessage('Please upload a payment screenshot');
-        setIsSubmitting(false);
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      const userId = data.session?.user.id;
+
+      if (!token || !userId) {
+        router.push('/login');
         return;
       }
 
-      // In a real app, you would upload the file first and get a URL
-      // For now, we'll use a placeholder
-      const screenshotUrl = `https://example.com/screenshots/${Date.now()}-${uploadedFile.name}`;
-
-      const response = await fetch('/api/payments/confirm', {
+      // Update order status to "payment_pending_verification"
+      const response = await fetch(`/api/orders/${orderId}/payment-confirm`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({
-          orderId: orderData.orderId,
-          userId: 'user-123', // This would come from session
-          fullName: formData.fullName,
-          phone: formData.phone,
-          email: formData.email,
-          transactionReference: formData.transactionReference,
-          screenshotUrl,
-          amount: total,
+          paymentMethod: 'bank_transfer',
+          status: 'payment_pending_verification',
         }),
       });
 
       if (!response.ok) {
         const error = await response.json();
-        throw new Error(error.error || 'Failed to submit payment confirmation');
+        throw new Error(error.error || 'Failed to confirm payment');
       }
 
-      setSuccessMessage(
-        'Payment confirmation submitted successfully! Our team will verify your payment within 24 hours.'
-      );
-      setFormData({
-        fullName: '',
-        phone: '',
-        email: '',
-        transactionReference: '',
-      });
-      setUploadedFile(null);
+      setSuccessMessage('Payment confirmed successfully! Redirecting to order tracking...');
+      setPaymentStep('processing');
+      
+      // Wait a moment before redirecting
       setTimeout(() => {
-        window.location.href = '/account';
-      }, 3000);
+        router.push(`/order-tracking/${orderId}?status=pending`);
+      }, 2000);
     } catch (error) {
       setErrorMessage(
-        error instanceof Error ? error.message : 'Failed to submit payment'
+        error instanceof Error ? error.message : 'Failed to confirm payment. Please try again.'
       );
-    } finally {
       setIsSubmitting(false);
     }
   };
 
+  if (isLoading) {
+    return (
+      <div className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white min-h-screen">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <div className="w-12 h-12 border-4 border-accent border-t-transparent rounded-full animate-spin mx-auto mb-4" />
+          <p className="text-foreground/60">Loading your order details...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!orderId) {
+    return (
+      <div className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white min-h-screen">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
+          <h1 className="text-2xl font-bold text-foreground mb-4">No Order Found</h1>
+          <p className="text-foreground/60 mb-8">We couldn't find the order you're looking for.</p>
+          <Link
+            href="/shop"
+            className="inline-block px-8 py-4 bg-accent text-accent-foreground font-semibold rounded-lg hover:bg-accent/90 transition-colors"
+          >
+            Return to Shop
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
+  // If payment is already processing or confirmed
+  if (paymentStep === 'processing') {
+    return (
+      <div className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white min-h-screen">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ duration: 0.5 }}
+          >
+            <div className="w-20 h-20 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-6">
+              <CheckCircle className="w-10 h-10 text-green-600" />
+            </div>
+            <h1 className="text-3xl font-bold text-foreground mb-4">
+              Payment Confirmed!
+            </h1>
+            <p className="text-lg text-foreground/70 mb-2">
+              Your payment is being verified by our team.
+            </p>
+            <p className="text-foreground/60 mb-8">
+              You'll receive a confirmation email within 24 hours.
+            </p>
+            <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-8 max-w-md mx-auto">
+              <div className="flex items-center gap-3">
+                <Clock className="w-5 h-5 text-blue-600 flex-shrink-0" />
+                <p className="text-sm text-blue-800">
+                  Redirecting to order tracking...
+                </p>
+              </div>
+            </div>
+            <Link
+              href={`/order-tracking/${orderId}?status=pending`}
+              className="inline-block px-8 py-4 bg-accent text-accent-foreground font-semibold rounded-lg hover:bg-accent/90 transition-colors"
+            >
+              Track Your Order
+            </Link>
+          </motion.div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="pt-32 pb-20 bg-background">
+    <div className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white min-h-screen">
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <motion.div
@@ -124,278 +205,293 @@ export default function PaymentPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
         >
-          <h1 className="text-4xl sm:text-5xl font-playfair font-bold text-foreground mb-4">
+          <h1 className="font-serif text-4xl md:text-5xl font-bold text-foreground mb-4">
             Complete Your Payment
           </h1>
-          <p className="text-lg text-foreground/70">
-            Transfer to the account below to complete your order
+          <div className="w-20 h-0.5 bg-accent mx-auto mb-6" />
+          <p className="text-lg text-foreground/70 max-w-2xl mx-auto">
+            Transfer the exact amount to the account below to complete your order
           </p>
         </motion.div>
 
+        {/* Success Message */}
+        {successMessage && (
+          <motion.div
+            className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
+            <p className="text-green-800">{successMessage}</p>
+          </motion.div>
+        )}
+
+        {/* Error Message */}
+        {errorMessage && (
+          <motion.div
+            className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3"
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+          >
+            <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+            <p className="text-red-800">{errorMessage}</p>
+          </motion.div>
+        )}
+
         {/* Order Summary */}
         <motion.div
-          className="bg-card rounded-lg border border-border p-8 mb-8"
+          className="bg-white rounded-2xl shadow-sm border border-border p-8 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
         >
-          <h2 className="text-xl font-playfair font-bold text-foreground mb-6">
+          <h2 className="font-serif text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-accent" />
             Order Summary
           </h2>
-          <div className="space-y-3 mb-6">
-            <div className="flex justify-between text-foreground/70">
-              <span>Subtotal:</span>
-              <span>{displayNaira(orderData.subtotal)}</span>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="space-y-3">
+              <div className="flex justify-between text-foreground/70">
+                <span>Order ID:</span>
+                <span className="font-mono font-semibold text-foreground">
+                  {orderData?.orderNumber || orderId}
+                </span>
+              </div>
+              <div className="flex justify-between text-foreground/70">
+                <span>Items:</span>
+                <span className="text-foreground">
+                  {orderData?.items?.length || 0} items
+                </span>
+              </div>
+              <div className="flex justify-between text-foreground/70">
+                <span>Payment Method:</span>
+                <span className="text-foreground">Bank Transfer</span>
+              </div>
             </div>
-            <div className="flex justify-between text-foreground/70">
-              <span>Tax:</span>
-              <span>{displayNaira(orderData.tax)}</span>
-            </div>
-            <div className="flex justify-between text-foreground/70">
-              <span>Shipping:</span>
-              <span>{displayNaira(orderData.shipping)}</span>
-            </div>
-            <div className="border-t border-border pt-3 flex justify-between">
-              <span className="font-bold text-foreground">Total Amount:</span>
-              <span className="text-2xl font-bold text-accent">
-                {displayNaira(total)}
-              </span>
+            <div className="space-y-3">
+              <div className="flex justify-between text-foreground/70">
+                <span>Subtotal:</span>
+                <span className="text-foreground">{displayNaira(orderData?.subtotal || 0)}</span>
+              </div>
+              <div className="flex justify-between text-foreground/70">
+                <span>Tax:</span>
+                <span className="text-foreground">{displayNaira(orderData?.tax || 0)}</span>
+              </div>
+              <div className="flex justify-between text-foreground/70">
+                <span>Shipping:</span>
+                <span className="text-foreground">
+                  {orderData?.shipping === 0 ? 'Free' : displayNaira(orderData?.shipping || 0)}
+                </span>
+              </div>
             </div>
           </div>
-          <p className="text-sm text-foreground/60">
-            Order ID: <span className="font-mono font-semibold">{orderData.orderId}</span>
-          </p>
+          
+          <div className="border-t border-border mt-6 pt-6 flex justify-between items-center">
+            <span className="font-serif text-lg font-bold text-foreground">Total Amount</span>
+            <span className="font-serif text-3xl font-bold text-accent">
+              {displayNaira(total)}
+            </span>
+          </div>
         </motion.div>
+
+        {/* Shipping Address */}
+        {orderData?.shippingAddress && (
+          <motion.div
+            className="bg-white rounded-2xl shadow-sm border border-border p-8 mb-8"
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.15 }}
+          >
+            <h2 className="font-serif text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+              <MapPin className="w-5 h-5 text-accent" />
+              Shipping Address
+            </h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
+              <div className="space-y-2">
+                <div className="flex items-center gap-2 text-foreground/60">
+                  <User className="w-4 h-4" />
+                  <span>
+                    {orderData.shippingAddress.firstName} {orderData.shippingAddress.lastName}
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 text-foreground/60">
+                  <Mail className="w-4 h-4" />
+                  <span>{orderData.shippingAddress.email}</span>
+                </div>
+                <div className="flex items-center gap-2 text-foreground/60">
+                  <Phone className="w-4 h-4" />
+                  <span>{orderData.shippingAddress.phone}</span>
+                </div>
+              </div>
+              <div className="space-y-2">
+                <p className="text-foreground/60">
+                  {orderData.shippingAddress.street}
+                </p>
+                <p className="text-foreground/60">
+                  {orderData.shippingAddress.city}, {orderData.shippingAddress.state} {orderData.shippingAddress.zipCode}
+                </p>
+                <p className="text-foreground/60">
+                  {orderData.shippingAddress.country}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
 
         {/* Bank Details */}
         <motion.div
-          className="bg-card rounded-lg border border-border p-8 mb-8"
+          className="bg-white rounded-2xl shadow-sm border border-border p-8 mb-8"
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          <h2 className="text-xl font-playfair font-bold text-foreground mb-6">
+          <h2 className="font-serif text-xl font-bold text-foreground mb-6 flex items-center gap-2">
+            <Banknote className="w-5 h-5 text-accent" />
             Bank Transfer Details
           </h2>
-          <div className="space-y-4 mb-8">
-            <div>
-              <p className="text-sm text-foreground/60 mb-2">Account Name</p>
-              <p className="text-lg font-semibold text-foreground">
-                {BANK_DETAILS.accountName}
-              </p>
+          
+          <div className="bg-gray-50 rounded-xl p-6 mb-8 space-y-4">
+            <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+              <span className="text-foreground/60">Account Name</span>
+              <span className="font-semibold text-foreground">{BANK_DETAILS.accountName}</span>
             </div>
-            <div>
-              <p className="text-sm text-foreground/60 mb-2">Bank Name</p>
-              <p className="text-lg font-semibold text-foreground">
-                {BANK_DETAILS.bankName}
-              </p>
+            <div className="flex justify-between items-center border-b border-gray-200 pb-3">
+              <span className="text-foreground/60">Bank Name</span>
+              <span className="font-semibold text-foreground">{BANK_DETAILS.bankName}</span>
             </div>
-            <div>
-              <p className="text-sm text-foreground/60 mb-2">Account Number</p>
+            <div className="flex justify-between items-center">
+              <span className="text-foreground/60">Account Number</span>
               <div className="flex items-center gap-3">
-                <p className="text-lg font-mono font-bold text-accent">
+                <span className="text-xl font-mono font-bold text-accent">
                   {BANK_DETAILS.accountNumber}
-                </p>
+                </span>
                 <motion.button
                   onClick={copyAccountNumber}
-                  className="p-2 hover:bg-secondary rounded-lg transition-colors"
+                  className="p-2 hover:bg-white rounded-lg transition-colors"
                   whileTap={{ scale: 0.95 }}
                 >
-                  <Copy size={20} className="text-foreground" />
+                  <Copy size={20} className="text-foreground/60 hover:text-foreground" />
                 </motion.button>
               </div>
-              {copied && (
-                <motion.p
-                  className="text-sm text-green-600 mt-2 flex items-center gap-2"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                >
-                  <CheckCircle size={16} />
-                  Account number copied successfully
-                </motion.p>
-              )}
             </div>
           </div>
 
+          {copied && (
+            <motion.div
+              className="bg-green-50 border border-green-200 rounded-lg p-3 mb-6 flex items-center gap-2"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+            >
+              <CheckCircle size={16} className="text-green-600" />
+              <span className="text-sm text-green-700">Account number copied successfully</span>
+            </motion.div>
+          )}
+
           {/* Important Notice */}
-          <div className="bg-accent/10 border border-accent/30 rounded-lg p-4 mb-6">
-            <div className="flex gap-3">
-              <AlertCircle className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-              <div className="text-sm text-foreground">
-                <p className="font-semibold mb-1">Important:</p>
-                <ul className="list-disc list-inside space-y-1">
-                  <li>Transfer the exact amount shown above</li>
-                  <li>After transfer, please wait 2-3 minutes</li>
-                  <li>Then submit the payment confirmation below</li>
-                  <li>We will verify your payment within 24 hours</li>
+          <div className="bg-accent/5 border border-accent/20 rounded-xl p-6 mb-6">
+            <div className="flex gap-4">
+              <AlertCircle className="w-6 h-6 text-accent flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-foreground/80">
+                <p className="font-semibold text-foreground mb-3">⚠️ Important Instructions:</p>
+                <ul className="space-y-2">
+                  <li className="flex items-start gap-2">
+                    <span className="text-accent font-bold">1.</span>
+                    <span>Transfer the <strong>exact amount</strong> shown above (<strong>{displayNaira(total)}</strong>)</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-accent font-bold">2.</span>
+                    <span>Use your <strong>Order ID</strong> ({orderData?.orderNumber || orderId}) as payment reference</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-accent font-bold">3.</span>
+                    <span>After transfer, click the <strong>"I Have Made Payment"</strong> button below</span>
+                  </li>
+                  <li className="flex items-start gap-2">
+                    <span className="text-accent font-bold">4.</span>
+                    <span>You'll be redirected to track your order status</span>
+                  </li>
                 </ul>
               </div>
             </div>
           </div>
 
-          {/* Payment Confirmation Button */}
+          {/* Submit Payment Button */}
           <motion.button
-            onClick={() => setShowPaymentForm(!showPaymentForm)}
-            className="w-full bg-accent text-accent-foreground py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+            onClick={handlePaymentMade}
+            disabled={isSubmitting}
+            className="w-full bg-accent text-accent-foreground py-4 rounded-xl font-semibold hover:bg-accent/90 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 text-lg"
             whileTap={{ scale: 0.98 }}
           >
-            {showPaymentForm ? 'Hide Payment Form' : 'I HAVE MADE PAYMENT'}
+            {isSubmitting ? (
+              <>
+                <div className="w-6 h-6 border-3 border-white border-t-transparent rounded-full animate-spin" />
+                Processing...
+              </>
+            ) : (
+              <>
+                <CheckCircle size={24} />
+                I Have Made Payment
+              </>
+            )}
           </motion.button>
+
+          <p className="text-xs text-foreground/50 text-center mt-4">
+            By clicking this button, you confirm that you have made the transfer to the account above.
+            Our team will verify your payment within 24 hours.
+          </p>
         </motion.div>
 
-        {/* Payment Confirmation Form */}
-        {showPaymentForm && (
-          <motion.div
-            className="bg-card rounded-lg border border-border p-8"
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.3 }}
-          >
-            <h2 className="text-xl font-playfair font-bold text-foreground mb-6">
-              Payment Confirmation
-            </h2>
-
-            {successMessage && (
-              <motion.div
-                className="bg-green-50 border border-green-200 rounded-lg p-4 mb-6 flex items-center gap-3"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0" />
-                <p className="text-green-800">{successMessage}</p>
-              </motion.div>
-            )}
-
-            {errorMessage && (
-              <motion.div
-                className="bg-red-50 border border-red-200 rounded-lg p-4 mb-6 flex items-center gap-3"
-                initial={{ opacity: 0 }}
-                animate={{ opacity: 1 }}
-              >
-                <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-                <p className="text-red-800">{errorMessage}</p>
-              </motion.div>
-            )}
-
-            <form onSubmit={handleSubmitPayment} className="space-y-6">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    name="fullName"
-                    value={formData.fullName}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-                    placeholder="Your full name"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-semibold text-foreground mb-2">
-                    Phone Number
-                  </label>
-                  <input
-                    type="tel"
-                    name="phone"
-                    value={formData.phone}
-                    onChange={handleInputChange}
-                    required
-                    className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-                    placeholder="+234..."
-                  />
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Email Address
-                </label>
-                <input
-                  type="email"
-                  name="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-                  placeholder="your@email.com"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Transaction Reference Number
-                </label>
-                <input
-                  type="text"
-                  name="transactionReference"
-                  value={formData.transactionReference}
-                  onChange={handleInputChange}
-                  required
-                  className="w-full px-4 py-2 rounded-lg border border-border bg-background text-foreground focus:outline-none focus:ring-2 focus:ring-accent"
-                  placeholder="Reference from your bank"
-                />
-                <p className="text-xs text-foreground/60 mt-2">
-                  You can find this on your bank receipt or transfer confirmation
-                </p>
-              </div>
-
-              <div>
-                <label className="block text-sm font-semibold text-foreground mb-2">
-                  Payment Screenshot
-                </label>
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:bg-secondary/50 transition-colors cursor-pointer">
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleFileChange}
-                    required
-                    className="hidden"
-                    id="screenshot-upload"
-                  />
-                  <label htmlFor="screenshot-upload" className="cursor-pointer">
-                    <Upload className="w-8 h-8 mx-auto mb-2 text-accent" />
-                    <p className="text-sm font-semibold text-foreground">
-                      {uploadedFile ? uploadedFile.name : 'Click to upload or drag and drop'}
-                    </p>
-                    <p className="text-xs text-foreground/60">PNG, JPG up to 10MB</p>
-                  </label>
-                </div>
-              </div>
-
-              <motion.button
-                type="submit"
-                disabled={isSubmitting}
-                className="w-full bg-accent text-accent-foreground py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity disabled:opacity-50 disabled:cursor-not-allowed"
-                whileTap={{ scale: 0.98 }}
-              >
-                {isSubmitting ? 'Submitting...' : 'Submit Payment Confirmation'}
-              </motion.button>
-            </form>
-
-            <p className="text-xs text-foreground/60 text-center mt-6">
-              Our team will verify your payment and update your order status within 24 hours.
-            </p>
-          </motion.div>
-        )}
+        {/* Need Help */}
+        <motion.div
+          className="bg-gray-50 rounded-2xl p-8 text-center"
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.3 }}
+        >
+          <h3 className="font-semibold text-foreground mb-2">Need Help?</h3>
+          <p className="text-sm text-foreground/60 mb-4">
+            If you encounter any issues with your payment, please contact our support team.
+          </p>
+          <div className="flex flex-wrap gap-4 justify-center">
+            <a
+              href="mailto:support@yourstore.com"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-accent text-accent-foreground rounded-lg font-medium hover:bg-accent/90 transition-colors"
+            >
+              Email Support
+            </a>
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-6 py-3 border border-border rounded-lg font-medium hover:bg-gray-100 transition-colors"
+            >
+              Contact Form
+            </Link>
+          </div>
+        </motion.div>
 
         {/* Back to Shop Link */}
         <motion.div
-          className="text-center mt-12"
+          className="text-center mt-8"
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 0.4 }}
         >
           <Link
             href="/shop"
-            className="inline-flex items-center gap-2 text-accent hover:text-accent/80 transition-colors font-semibold"
+            className="inline-flex items-center gap-2 text-accent hover:text-accent/80 transition-colors font-medium"
           >
             ← Continue Shopping
           </Link>
         </motion.div>
       </div>
     </div>
+  );
+}
+
+export default function PaymentPage() {
+  return (
+    <Suspense fallback={<div className="pt-32 pb-20 text-center text-foreground/60">Loading payment...</div>}>
+      <PaymentContent />
+    </Suspense>
   );
 }

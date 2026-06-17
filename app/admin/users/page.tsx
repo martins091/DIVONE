@@ -1,12 +1,13 @@
-// app/admin/users/page.tsx
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Mail, Calendar, User, Trash2 } from 'lucide-react';
+import { Mail, Calendar, User } from 'lucide-react';
+import { displayNaira } from '@/lib/currency';
+import { supabase } from '@/lib/supabase/client';
 
-interface User {
-  id: number;
+interface Customer {
+  id: string;
   name: string;
   email: string;
   joinedDate: string;
@@ -15,37 +16,39 @@ interface User {
 }
 
 export default function ManageUsers() {
-  const [users, setUsers] = useState<User[]>([]);
+  const [users, setUsers] = useState<Customer[]>([]);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    const stored = localStorage.getItem('users');
-    if (stored) {
-      setUsers(JSON.parse(stored));
-    } else {
-      const demoUsers = [
-        { id: 1, name: 'Sarah Johnson', email: 'sarah@example.com', joinedDate: '2026-01-15', ordersCount: 5, totalSpent: 1250 },
-        { id: 2, name: 'Emily Davis', email: 'emily@example.com', joinedDate: '2026-02-20', ordersCount: 3, totalSpent: 890 },
-        { id: 3, name: 'Jessica Brown', email: 'jessica@example.com', joinedDate: '2026-03-10', ordersCount: 2, totalSpent: 450 },
-      ];
-      setUsers(demoUsers);
-      localStorage.setItem('users', JSON.stringify(demoUsers));
-    }
-  }, []);
+    const loadUsers = async () => {
+      const { data } = await supabase.auth.getSession();
+      const token = data.session?.access_token;
+      if (!token) return;
 
-  const handleDeleteUser = (id: number) => {
-    if (confirm('Delete this user? This action cannot be undone.')) {
-      const updated = users.filter(u => u.id !== id);
-      setUsers(updated);
-      localStorage.setItem('users', JSON.stringify(updated));
-    }
-  };
+      const response = await fetch('/api/admin/users', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await response.json();
+
+      if (!response.ok) {
+        setError(result.error || 'Failed to fetch users');
+        return;
+      }
+
+      setUsers(result.users || []);
+    };
+
+    loadUsers();
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-50 p-6">
       <div className="mb-6">
         <h1 className="text-2xl font-serif font-bold text-gray-800">Manage Users</h1>
-        <p className="text-gray-500">View and manage registered customers</p>
+        <p className="text-gray-500">View registered customers and spending history</p>
       </div>
+
+      {error && <div className="mb-4 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-700">{error}</div>}
 
       <div className="grid grid-cols-1 gap-6">
         {users.map((user, index) => (
@@ -56,41 +59,33 @@ export default function ManageUsers() {
             transition={{ delay: index * 0.1 }}
             className="bg-white rounded-xl shadow-sm border border-gray-100 p-6"
           >
-            <div className="flex justify-between items-start">
-              <div className="flex items-start gap-4">
-                <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
-                  <User className="w-6 h-6 text-accent" />
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 bg-accent/10 rounded-full flex items-center justify-center">
+                <User className="w-6 h-6 text-accent" />
+              </div>
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800">{user.name}</h3>
+                <div className="flex flex-wrap items-center gap-4 mt-2 text-sm text-gray-500">
+                  <span className="flex items-center gap-1">
+                    <Mail className="w-4 h-4" />
+                    {user.email}
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <Calendar className="w-4 h-4" />
+                    Joined {new Date(user.joinedDate).toLocaleDateString()}
+                  </span>
                 </div>
-                <div>
-                  <h3 className="text-lg font-semibold text-gray-800">{user.name}</h3>
-                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-500">
-                    <span className="flex items-center gap-1">
-                      <Mail className="w-4 h-4" />
-                      {user.email}
-                    </span>
-                    <span className="flex items-center gap-1">
-                      <Calendar className="w-4 h-4" />
-                      Joined {user.joinedDate}
-                    </span>
+                <div className="flex gap-6 mt-4">
+                  <div>
+                    <p className="text-xs text-gray-500">Orders</p>
+                    <p className="text-lg font-semibold text-gray-800">{user.ordersCount}</p>
                   </div>
-                  <div className="flex gap-6 mt-4">
-                    <div>
-                      <p className="text-xs text-gray-500">Orders</p>
-                      <p className="text-lg font-semibold text-gray-800">{user.ordersCount}</p>
-                    </div>
-                    <div>
-                      <p className="text-xs text-gray-500">Total Spent</p>
-                      <p className="text-lg font-semibold text-accent">${user.totalSpent}</p>
-                    </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Total Spent</p>
+                    <p className="text-lg font-semibold text-accent">{displayNaira(user.totalSpent)}</p>
                   </div>
                 </div>
               </div>
-              <button
-                onClick={() => handleDeleteUser(user.id)}
-                className="text-red-500 hover:text-red-700 transition"
-              >
-                <Trash2 className="w-5 h-5" />
-              </button>
             </div>
           </motion.div>
         ))}

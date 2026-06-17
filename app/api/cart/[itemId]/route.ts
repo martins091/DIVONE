@@ -1,59 +1,32 @@
 import { NextRequest, NextResponse } from 'next/server';
-import connectDB from '@/lib/db';
-import Cart from '@/lib/models/Cart';
-import { getSupabaseUserFromBearerToken } from '@/lib/supabase/server';
+import { createSupabaseRouteClient, getSupabaseUserFromBearerToken } from '@/lib/supabase/server';
 
 export async function PUT(
   req: NextRequest,
   { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
-    await connectDB();
-    const { itemId } = await params;
+    const authorization = req.headers.get('authorization');
+    const { user, error: authError } = await getSupabaseUserFromBearerToken(authorization);
 
-    const { user, error } = await getSupabaseUserFromBearerToken(req.headers.get('authorization'));
     if (!user) {
-      return NextResponse.json(
-        { error },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: authError }, { status: 401 });
     }
-    const userId = user.id;
 
+    const { itemId } = await params;
     const { quantity } = await req.json();
+    const supabase = createSupabaseRouteClient(authorization);
+    const { error } = await supabase
+      .from('cart_items')
+      .update({ quantity: Number(quantity) })
+      .eq('id', itemId);
 
-    const cart = await Cart.findOne({ userId });
-    if (!cart) {
-      return NextResponse.json(
-        { error: 'Cart not found' },
-        { status: 404 }
-      );
-    }
+    if (error) throw error;
 
-    const item = cart.items.id(itemId);
-    if (!item) {
-      return NextResponse.json(
-        { error: 'Item not found in cart' },
-        { status: 404 }
-      );
-    }
-
-    item.quantity = quantity;
-    await cart.save();
-
-    return NextResponse.json(
-      {
-        message: 'Cart item updated',
-        cart,
-      },
-      { status: 200 }
-    );
+    return NextResponse.json({ message: 'Cart item updated' });
   } catch (error) {
     console.error('Error updating cart item:', error);
-    return NextResponse.json(
-      { error: 'Failed to update cart item' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to update cart item' }, { status: 500 });
   }
 }
 
@@ -62,41 +35,22 @@ export async function DELETE(
   { params }: { params: Promise<{ itemId: string }> }
 ) {
   try {
-    await connectDB();
-    const { itemId } = await params;
+    const authorization = req.headers.get('authorization');
+    const { user, error: authError } = await getSupabaseUserFromBearerToken(authorization);
 
-    const { user, error } = await getSupabaseUserFromBearerToken(req.headers.get('authorization'));
     if (!user) {
-      return NextResponse.json(
-        { error },
-        { status: 401 }
-      );
-    }
-    const userId = user.id;
-
-    const cart = await Cart.findOne({ userId });
-    if (!cart) {
-      return NextResponse.json(
-        { error: 'Cart not found' },
-        { status: 404 }
-      );
+      return NextResponse.json({ error: authError }, { status: 401 });
     }
 
-    cart.items.id(itemId).deleteOne();
-    await cart.save();
+    const { itemId } = await params;
+    const supabase = createSupabaseRouteClient(authorization);
+    const { error } = await supabase.from('cart_items').delete().eq('id', itemId);
 
-    return NextResponse.json(
-      {
-        message: 'Item removed from cart',
-        cart,
-      },
-      { status: 200 }
-    );
+    if (error) throw error;
+
+    return NextResponse.json({ message: 'Item removed from cart' });
   } catch (error) {
     console.error('Error removing cart item:', error);
-    return NextResponse.json(
-      { error: 'Failed to remove cart item' },
-      { status: 500 }
-    );
+    return NextResponse.json({ error: 'Failed to remove cart item' }, { status: 500 });
   }
 }
