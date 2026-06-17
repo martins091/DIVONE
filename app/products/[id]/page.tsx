@@ -25,7 +25,16 @@ interface Product {
   isNew: boolean;
 }
 
-export default function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+// Option 1: Using async/await with params (Recommended for Next.js 15)
+export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
+  
+  // Now use the id in your component
+  return <ProductDetailContent id={id} />;
+}
+
+// Move all the client-side logic to a separate component
+function ProductDetailContent({ id }: { id: string }) {
   const [quantity, setQuantity] = useState(1);
   const [selectedSize, setSelectedSize] = useState('');
   const [selectedColor, setSelectedColor] = useState('');
@@ -36,9 +45,6 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
   const [error, setError] = useState('');
   const [activeImage, setActiveImage] = useState(0);
   const { addToCart } = useCart();
-
-  // Unwrap params using React.use()
-  const { id } = React.use(params);
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -80,7 +86,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
         setProduct(mappedProduct);
         setSelectedSize(mappedProduct.sizes?.[0] || 'One Size');
         setSelectedColor(mappedProduct.colors?.[0] || 'Default');
-        setActiveImage(0); // Reset to first image
+        setActiveImage(0);
       } catch (error) {
         console.error('Error fetching product:', error);
         setError(error instanceof Error ? error.message : 'Failed to load product');
@@ -125,31 +131,25 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
     }
   };
 
-  // Get the current image to display
-  const getCurrentImage = () => {
+  const getCurrentImage = (): string | null => {
     if (!product) return null;
     
-    // If we have images array and it's not empty, use it
     if (product.images && product.images.length > 0) {
       return product.images[activeImage] || product.image;
     }
     
-    // Fallback to main image
     return product.image;
   };
 
-  // Get all available images (main + additional)
-  const getAllImages = () => {
+  const getAllImages = (): string[] => {
     if (!product) return [];
     
-    const allImages = [];
+    const allImages: string[] = [];
     
-    // Add main image if it exists and is valid
     if (product.image && !product.image.startsWith('linear') && !product.image.includes('placeholder')) {
       allImages.push(product.image);
     }
     
-    // Add additional images
     if (product.images && product.images.length > 0) {
       product.images.forEach(img => {
         if (img && !allImages.includes(img)) {
@@ -250,7 +250,7 @@ export default function ProductDetailPage({ params }: { params: Promise<{ id: st
               )}
             </div>
 
-            {/* Thumbnail images - Show ALL available images */}
+            {/* Thumbnail images */}
             {allImages.length > 1 && (
               <div className="flex gap-3 mt-4 overflow-x-auto pb-2 scrollbar-hide">
                 {allImages.map((img, idx) => (
