@@ -72,6 +72,7 @@ export default function OrderTrackingPage() {
   const router = useRouter();
   const orderId = params.orderId as string;
   const initialStatus = searchParams.get('status') || 'pending';
+  const guestAccessToken = searchParams.get('token');
   
   const [order, setOrder] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -84,13 +85,8 @@ export default function OrderTrackingPage() {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
 
-        if (!token) {
-          router.push('/login');
-          return;
-        }
-
-        const response = await fetch(`/api/orders/${orderId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const response = await fetch(`/api/orders/${orderId}${guestAccessToken ? `?token=${guestAccessToken}` : ''}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         const result = await response.json();
 
@@ -111,7 +107,7 @@ export default function OrderTrackingPage() {
     if (orderId) {
       fetchOrder();
     }
-  }, [orderId, initialStatus, router]);
+  }, [orderId, initialStatus, guestAccessToken, router]);
 
   const statusInfo = ORDER_STATUSES[currentStatus] || ORDER_STATUSES.pending;
 

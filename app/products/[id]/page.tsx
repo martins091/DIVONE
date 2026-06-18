@@ -25,12 +25,8 @@ interface Product {
   isNew: boolean;
 }
 
-// Option 1: Using async/await with params (Recommended for Next.js 15)
-export default async function ProductDetailPage({ params }: { params: Promise<{ id: string }> }) {
-  const { id } = await params;
-  
-  // Now use the id in your component
-  return <ProductDetailContent id={id} />;
+export default function ProductDetailPage({ params }: { params: { id: string } }) {
+  return <ProductDetailContent id={params.id} />;
 }
 
 // Move all the client-side logic to a separate component
@@ -72,8 +68,8 @@ function ProductDetailContent({ id }: { id: string }) {
           rating: fetchedProduct.rating || 5,
           reviewCount: fetchedProduct.reviewCount || Math.floor(Math.random() * 100) + 10,
           description: fetchedProduct.description,
-          image: fetchedProduct.image?.startsWith('linear') 
-            ? null
+          image: fetchedProduct.image?.startsWith('linear')
+            ? ''
             : fetchedProduct.image || `https://via.placeholder.com/600x800?text=${encodeURIComponent(fetchedProduct.name)}`,
           images: fetchedProduct.images || [],
           sizes: fetchedProduct.sizes || ['S', 'M', 'L', 'XL'],

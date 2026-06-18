@@ -5,10 +5,10 @@ import { createSupabaseRouteClient, getSupabaseUserFromBearerToken } from '@/lib
 
 export async function GET(
   _req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
-    const { id } = await params;
+    const { id } = params;
     const supabase = createSupabaseRouteClient();
     const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
 
@@ -28,7 +28,7 @@ export async function GET(
 
 export async function PUT(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const authorization = req.headers.get('authorization');
@@ -38,7 +38,7 @@ export async function PUT(
       return NextResponse.json({ error: authError || 'Admin access required' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     const body = await req.json();
     const supabase = createSupabaseRouteClient(authorization);
     const { data, error } = await supabase
@@ -64,7 +64,7 @@ export async function PUT(
 
 export async function DELETE(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const authorization = req.headers.get('authorization');
@@ -74,7 +74,7 @@ export async function DELETE(
       return NextResponse.json({ error: authError || 'Admin access required' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     const supabase = createSupabaseRouteClient(authorization);
     const { error } = await supabase.from('products').delete().eq('id', id);
 

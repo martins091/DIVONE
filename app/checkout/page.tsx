@@ -50,18 +50,14 @@ export default function CheckoutPage() {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
 
-      if (!token) {
-        router.push('/login');
-        return;
-      }
-
       const response = await fetch('/api/orders', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
+          items,
           subtotal,
           tax,
           shipping,
@@ -90,7 +86,8 @@ export default function CheckoutPage() {
 
       // Clear cart and redirect to payment page
       await clearCart();
-      router.push(`/payment?orderId=${result.order.id}`);
+      const guestToken = result.order.userId ? null : result.order.guestAccessToken;
+      router.push(`/payment?orderId=${result.order.id}${guestToken ? `&token=${guestToken}` : ''}`);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to place order. Please try again.');
       setIsSubmitting(false);

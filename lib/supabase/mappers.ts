@@ -96,6 +96,7 @@ export function mapOrder(row: any) {
     id: row.id,
     orderNumber: row.order_number,
     userId: row.user_id,
+    guestAccessToken: row.guest_access_token,
     items,
     subtotal: Number(row.subtotal),
     tax: Number(row.tax),

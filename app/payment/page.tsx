@@ -18,6 +18,7 @@ function PaymentContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const orderId = searchParams.get('orderId');
+  const guestAccessToken = searchParams.get('token');
   const [copied, setCopied] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMessage, setErrorMessage] = useState('');
@@ -37,21 +38,16 @@ function PaymentContent() {
       try {
         const { data } = await supabase.auth.getSession();
         const token = data.session?.access_token;
-        if (!token) {
-          router.push('/login');
-          return;
-        }
 
-        const response = await fetch(`/api/orders/${orderId}`, {
-          headers: { Authorization: `Bearer ${token}` },
+        const response = await fetch(`/api/orders/${orderId}${guestAccessToken ? `?token=${guestAccessToken}` : ''}`, {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
         const result = await response.json();
 
         if (response.ok) {
           setOrderData(result.order);
           // Check if payment was already confirmed
-          if (result.order.status === 'payment_pending_verification' || 
-              result.order.status === 'confirmed' || 
+          if (result.order.status === 'confirmed' ||
               result.order.status === 'processing' ||
               result.order.status === 'shipped' ||
               result.order.status === 'delivered') {
@@ -85,23 +81,16 @@ function PaymentContent() {
     try {
       const { data } = await supabase.auth.getSession();
       const token = data.session?.access_token;
-      const userId = data.session?.user.id;
 
-      if (!token || !userId) {
-        router.push('/login');
-        return;
-      }
-
-      // Update order status to "payment_pending_verification"
       const response = await fetch(`/api/orders/${orderId}/payment-confirm`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
         body: JSON.stringify({
+          guestAccessToken,
           paymentMethod: 'bank_transfer',
-          status: 'payment_pending_verification',
         }),
       });
 
@@ -115,7 +104,7 @@ function PaymentContent() {
       
       // Wait a moment before redirecting
       setTimeout(() => {
-        router.push(`/order-tracking/${orderId}?status=pending`);
+        router.push(`/order-tracking/${orderId}?status=pending${guestAccessToken ? `&token=${guestAccessToken}` : ''}`);
       }, 2000);
     } catch (error) {
       setErrorMessage(
@@ -185,7 +174,7 @@ function PaymentContent() {
               </div>
             </div>
             <Link
-              href={`/order-tracking/${orderId}?status=pending`}
+              href={`/order-tracking/${orderId}?status=pending${guestAccessToken ? `&token=${guestAccessToken}` : ''}`}
               className="inline-block px-8 py-4 bg-accent text-accent-foreground font-semibold rounded-lg hover:bg-accent/90 transition-colors"
             >
               Track Your Order

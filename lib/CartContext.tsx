@@ -4,6 +4,7 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/lib/supabase/client';
 
 interface CartItem {
+  id?: string;
   _id: string;
   productId: string;
   name: string;
@@ -26,6 +27,22 @@ interface CartContextType {
 }
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
+const LOCAL_CART_KEY = 'divone_guest_cart';
+
+const readLocalCart = (): CartItem[] => {
+  if (typeof window === 'undefined') return [];
+
+  try {
+    return JSON.parse(window.localStorage.getItem(LOCAL_CART_KEY) || '[]');
+  } catch {
+    return [];
+  }
+};
+
+const writeLocalCart = (items: CartItem[]) => {
+  if (typeof window === 'undefined') return;
+  window.localStorage.setItem(LOCAL_CART_KEY, JSON.stringify(items));
+};
 
 export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>([]);
@@ -47,6 +64,7 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       const token = sessionData.session?.access_token;
 
       if (!token) {
+        setItems(readLocalCart());
         setIsLoading(false);
         return;
       }
@@ -74,7 +92,22 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       const token = sessionData.session?.access_token;
 
       if (!token) {
-        console.error('No authenticated user');
+        setItems((current) => {
+          const existingIndex = current.findIndex((cartItem) => cartItem._id === item._id);
+          const nextItems = [...current];
+
+          if (existingIndex >= 0) {
+            nextItems[existingIndex] = {
+              ...nextItems[existingIndex],
+              quantity: nextItems[existingIndex].quantity + item.quantity,
+            };
+          } else {
+            nextItems.push(item);
+          }
+
+          writeLocalCart(nextItems);
+          return nextItems;
+        });
         return;
       }
 
@@ -112,7 +145,11 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       const token = sessionData.session?.access_token;
 
       if (!token) {
-        console.error('No authenticated user');
+        setItems((current) => {
+          const nextItems = current.filter((item) => item._id !== itemId);
+          writeLocalCart(nextItems);
+          return nextItems;
+        });
         return;
       }
 
@@ -143,7 +180,13 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
       const token = sessionData.session?.access_token;
 
       if (!token) {
-        console.error('No authenticated user');
+        setItems((current) => {
+          const nextItems = current.map((item) =>
+            item._id === itemId ? { ...item, quantity } : item
+          );
+          writeLocalCart(nextItems);
+          return nextItems;
+        });
         return;
       }
 
@@ -168,6 +211,15 @@ export const CartProvider = ({ children }: { children: React.ReactNode }) => {
   };
 
   const clearCart = async () => {
+    const { data: sessionData } = await supabase.auth.getSession();
+    const token = sessionData.session?.access_token;
+
+    if (!token) {
+      writeLocalCart([]);
+      setItems([]);
+      return;
+    }
+
     // Optional: Implement batch delete if needed
     for (const item of items) {
       await removeFromCart(item._id);

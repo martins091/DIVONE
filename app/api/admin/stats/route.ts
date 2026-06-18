@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { isAdminUser } from '@/lib/supabase/admin';
 import { createSupabaseRouteClient, getSupabaseUserFromBearerToken } from '@/lib/supabase/server';
 
+export const dynamic = 'force-dynamic';
+
 export async function GET(req: NextRequest) {
   try {
     const authorization = req.headers.get('authorization');

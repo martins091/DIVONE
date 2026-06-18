@@ -6,18 +6,36 @@ import { createSupabaseRouteClient, getSupabaseUserFromBearerToken } from '@/lib
 
 export async function GET(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const authorization = req.headers.get('authorization');
+    const { searchParams } = new URL(req.url);
+    const guestAccessToken = searchParams.get('token');
     const { user, error: authError } = await getSupabaseUserFromBearerToken(authorization);
 
-    if (!user) {
+    if (authorization && !user) {
       return NextResponse.json({ error: authError }, { status: 401 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     const supabase = createSupabaseRouteClient(authorization);
+
+    if (!user) {
+      const { data, error } = await supabase.rpc('get_order_for_tracking', {
+        p_order_id: id,
+        p_guest_access_token: guestAccessToken,
+      });
+
+      if (error) throw error;
+
+      if (!data) {
+        return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+      }
+
+      return NextResponse.json({ message: 'Order fetched successfully', order: mapOrder(data) });
+    }
+
     const { data, error } = await supabase
       .from('orders')
       .select('*, order_items(*)')
@@ -41,7 +59,7 @@ export async function GET(
 
 export async function PATCH(
   req: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: { id: string } }
 ) {
   try {
     const authorization = req.headers.get('authorization');
@@ -51,7 +69,7 @@ export async function PATCH(
       return NextResponse.json({ error: authError || 'Admin access required' }, { status: 403 });
     }
 
-    const { id } = await params;
+    const { id } = params;
     const body = await req.json();
     const supabase = createSupabaseRouteClient(authorization);
     const updates: Record<string, unknown> = {};
