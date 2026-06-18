@@ -1,3 +1,5 @@
+// lib/supabase/mappers.ts
+
 type ProductRow = {
   id: string;
   name: string;
@@ -16,6 +18,10 @@ type ProductRow = {
   is_active: boolean;
   created_at: string;
   updated_at: string;
+  // NEW FIELDS - Add these to the type
+  is_sold?: boolean;
+  status?: string;
+  sold_date?: string | null;
 };
 
 export function mapProduct(row: ProductRow) {
@@ -41,13 +47,17 @@ export function mapProduct(row: ProductRow) {
     isNew: row.is_new,
     isFeatured: row.is_featured,
     isActive: row.is_active,
+    // NEW FIELDS - Add these to the returned object
+    isSold: row.is_sold || false,
+    status: row.status || 'available',
+    soldDate: row.sold_date || null,
     createdAt: row.created_at,
     updatedAt: row.updated_at,
   };
 }
 
 export function toProductInsert(body: any) {
-  return {
+  const insertData: any = {
     name: body.name,
     description: body.description,
     price: Number(body.price),
@@ -62,6 +72,21 @@ export function toProductInsert(body: any) {
     is_featured: body.isFeatured ?? false,
     is_active: body.isActive ?? true,
   };
+  
+  // NEW FIELDS - Add these to the insert data if they exist
+  if (body.isSold !== undefined) {
+    insertData.is_sold = body.isSold;
+  }
+  
+  if (body.status !== undefined) {
+    insertData.status = body.status;
+  }
+  
+  if (body.soldDate !== undefined) {
+    insertData.sold_date = body.soldDate;
+  }
+  
+  return insertData;
 }
 
 export function mapCartItem(row: any) {
@@ -110,4 +135,9 @@ export function mapOrder(row: any) {
     notes: row.notes,
     createdAt: row.created_at,
   };
+}
+
+// Optional: Helper function to check if a product is sold
+export function isProductSold(product: any) {
+  return product.isSold || product.status === 'sold' || product.stock === 0;
 }

@@ -3,7 +3,7 @@
 import React, { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Star, Heart, ShoppingBag, ArrowLeft, Truck, Shield, RefreshCw } from 'lucide-react';
+import { Star, Heart, ShoppingBag, ArrowLeft, Truck, Shield, RefreshCw, XCircle } from 'lucide-react';
 import { useCart } from '@/lib/CartContext';
 import { displayNaira } from '@/lib/currency';
 
@@ -23,6 +23,10 @@ interface Product {
   stock: number;
   category: string;
   isNew: boolean;
+  // NEW FIELDS
+  isSold?: boolean;
+  status?: string;
+  soldDate?: string | null;
 }
 
 export default function ProductDetailPage({ params }: { params: { id: string } }) {
@@ -77,6 +81,10 @@ function ProductDetailContent({ id }: { id: string }) {
           stock: fetchedProduct.stock || 10,
           category: fetchedProduct.category,
           isNew: fetchedProduct.isNew || !fetchedProduct.originalPrice,
+          // NEW FIELDS
+          isSold: fetchedProduct.isSold || false,
+          status: fetchedProduct.status || 'available',
+          soldDate: fetchedProduct.soldDate || null,
         };
         
         setProduct(mappedProduct);
@@ -98,6 +106,12 @@ function ProductDetailContent({ id }: { id: string }) {
 
   const handleAddToCart = () => {
     if (!product) return;
+
+    // Check if product is sold
+    if (product.isSold || product.status === 'sold' || product.stock === 0) {
+      alert('This product has been sold out!');
+      return;
+    }
 
     if (quantity > product.stock) {
       alert(`Only ${product.stock} items available in stock!`);
@@ -157,6 +171,9 @@ function ProductDetailContent({ id }: { id: string }) {
     return allImages;
   };
 
+  // Check if product is sold
+  const isProductSold = product?.isSold || product?.status === 'sold' || product?.stock === 0;
+
   if (loading) {
     return (
       <div className="pt-32 pb-20 bg-gradient-to-b from-gray-50 to-white min-h-screen flex items-center justify-center">
@@ -211,12 +228,16 @@ function ProductDetailContent({ id }: { id: string }) {
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${getPlaceholderGradient()} aspect-square`}>
+            <div className={`relative rounded-2xl overflow-hidden bg-gradient-to-br ${getPlaceholderGradient()} aspect-square ${
+              isProductSold ? 'opacity-80' : ''
+            }`}>
               {currentImage && currentImage.startsWith('http') ? (
                 <img 
                   src={currentImage} 
                   alt={product.name} 
-                  className="w-full h-full object-cover transition-opacity duration-300"
+                  className={`w-full h-full object-cover transition-opacity duration-300 ${
+                    isProductSold ? 'grayscale' : ''
+                  }`}
                 />
               ) : (
                 <div className="w-full h-full flex items-center justify-center">
@@ -224,16 +245,31 @@ function ProductDetailContent({ id }: { id: string }) {
                 </div>
               )}
               
+              {/* SOLD OUT Overlay */}
+              {isProductSold && (
+                <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                  <div className="bg-red-600/90 text-white px-8 py-4 rounded-lg font-bold text-3xl shadow-2xl transform -rotate-12 border-2 border-red-400">
+                    SOLD OUT
+                  </div>
+                </div>
+              )}
+              
               {/* Badges */}
               <div className="absolute top-4 left-4 flex gap-2">
-                {discountPercent > 0 && (
+                {discountPercent > 0 && !isProductSold && (
                   <span className="px-3 py-1 bg-accent text-white text-sm font-medium rounded-full">
                     -{discountPercent}%
                   </span>
                 )}
-                {product.isNew && (
+                {product.isNew && !isProductSold && (
                   <span className="px-3 py-1 bg-black/80 backdrop-blur text-white text-sm font-medium rounded-full">
                     NEW
+                  </span>
+                )}
+                {isProductSold && (
+                  <span className="px-3 py-1 bg-red-600 text-white text-sm font-medium rounded-full flex items-center gap-1">
+                    <XCircle className="w-4 h-4" />
+                    SOLD
                   </span>
                 )}
               </div>
@@ -261,7 +297,7 @@ function ProductDetailContent({ id }: { id: string }) {
                       <img 
                         src={img} 
                         alt={`${product.name} - view ${idx + 1}`} 
-                        className="w-full h-full object-cover"
+                        className={`w-full h-full object-cover ${isProductSold ? 'grayscale' : ''}`}
                       />
                     ) : (
                       <div className="w-full h-full bg-gray-100 flex items-center justify-center">
@@ -286,9 +322,18 @@ function ProductDetailContent({ id }: { id: string }) {
               <span className="text-accent text-sm font-medium tracking-wide uppercase">
                 {product.category}
               </span>
-              <h1 className="font-serif text-3xl md:text-4xl font-bold text-foreground mt-2">
+              <h1 className={`font-serif text-3xl md:text-4xl font-bold mt-2 ${
+                isProductSold ? 'text-gray-400 line-through' : 'text-foreground'
+              }`}>
                 {product.name}
               </h1>
+              {isProductSold && (
+                <div className="mt-2 flex items-center gap-2">
+                  <span className="bg-red-100 text-red-700 px-3 py-1 rounded-full text-sm font-medium">
+                    This item has been sold
+                  </span>
+                </div>
+              )}
             </div>
 
             {/* Rating */}
@@ -306,16 +351,22 @@ function ProductDetailContent({ id }: { id: string }) {
                 {product.reviewCount} reviews
               </span>
               <span className="text-foreground/30">|</span>
-              <span className="text-green-600 text-sm">In Stock ({product.stock} units)</span>
+              {isProductSold ? (
+                <span className="text-red-600 text-sm font-medium">Sold Out</span>
+              ) : (
+                <span className="text-green-600 text-sm">In Stock ({product.stock} units)</span>
+              )}
             </div>
 
             {/* Price */}
             <div className="border-t border-b border-gray-100 py-6">
               <div className="flex items-baseline gap-3 flex-wrap">
-                <span className="text-4xl font-bold text-foreground">
+                <span className={`text-4xl font-bold ${
+                  isProductSold ? 'text-gray-400' : 'text-foreground'
+                }`}>
                   {displayNaira(totalPrice)}
                 </span>
-                {totalOriginalPrice && (
+                {totalOriginalPrice && !isProductSold && (
                   <>
                     <span className="text-xl text-gray-400 line-through">
                       {displayNaira(totalOriginalPrice)}
@@ -326,18 +377,18 @@ function ProductDetailContent({ id }: { id: string }) {
                   </>
                 )}
               </div>
-              {quantity > 1 && (
+              {quantity > 1 && !isProductSold && (
                 <p className="text-sm text-gray-400 mt-1">
                   Unit price: {displayNaira(unitPrice)}
                 </p>
               )}
               <p className="text-sm text-gray-500 mt-2">
-                Tax included. Free shipping on orders over ₦500,000
+                {isProductSold ? 'This item is no longer available for purchase.' : 'Tax included. Free shipping on orders over ₦500,000'}
               </p>
             </div>
 
             {/* Subtotal preview */}
-            {quantity > 1 && (
+            {quantity > 1 && !isProductSold && (
               <div className="bg-amber-50 p-3 rounded-lg border border-amber-200">
                 <p className="text-sm text-amber-800">
                   Subtotal for {quantity} {quantity === 1 ? 'item' : 'items'}: <span className="font-bold">{displayNaira(totalPrice)}</span>
@@ -348,27 +399,34 @@ function ProductDetailContent({ id }: { id: string }) {
             {/* Description */}
             <div>
               <h3 className="font-semibold text-foreground mb-2">Description</h3>
-              <p className="text-foreground/70 leading-relaxed">
+              <p className={`leading-relaxed ${isProductSold ? 'text-gray-400' : 'text-foreground/70'}`}>
                 {product.description}
               </p>
             </div>
 
-            {/* Size Selection */}
+            {/* Size Selection - Disable when sold */}
             {product.sizes && product.sizes.length > 0 && product.sizes[0] !== 'One Size' && (
               <div>
                 <div className="flex justify-between items-center mb-3">
-                  <h3 className="font-semibold text-foreground">Select Size</h3>
-                  <button className="text-accent text-sm hover:underline">Size Guide</button>
+                  <h3 className={`font-semibold ${isProductSold ? 'text-gray-400' : 'text-foreground'}`}>
+                    Select Size
+                  </h3>
+                  {!isProductSold && (
+                    <button className="text-accent text-sm hover:underline">Size Guide</button>
+                  )}
                 </div>
                 <div className="flex flex-wrap gap-3">
                   {product.sizes.map(size => (
                     <button
                       key={size}
-                      onClick={() => setSelectedSize(size)}
+                      onClick={() => !isProductSold && setSelectedSize(size)}
+                      disabled={isProductSold}
                       className={`min-w-[60px] h-12 px-4 rounded-lg border-2 transition-all font-medium ${
-                        selectedSize === size
-                          ? 'border-accent bg-accent text-white'
-                          : 'border-gray-200 hover:border-accent text-gray-700'
+                        isProductSold
+                          ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50'
+                          : selectedSize === size
+                            ? 'border-accent bg-accent text-white'
+                            : 'border-gray-200 hover:border-accent text-gray-700'
                       }`}
                     >
                       {size}
@@ -378,19 +436,24 @@ function ProductDetailContent({ id }: { id: string }) {
               </div>
             )}
 
-            {/* Color Selection */}
+            {/* Color Selection - Disable when sold */}
             {product.colors && product.colors.length > 0 && product.colors[0] !== 'Default' && (
               <div>
-                <h3 className="font-semibold text-foreground mb-3">Select Color</h3>
-                <div className="flex flex-wrap gap-3">
+                <h3 className={`font-semibold ${isProductSold ? 'text-gray-400' : 'text-foreground'}`}>
+                  Select Color
+                </h3>
+                <div className="flex flex-wrap gap-3 mt-3">
                   {product.colors.map(color => (
                     <button
                       key={color}
-                      onClick={() => setSelectedColor(color)}
+                      onClick={() => !isProductSold && setSelectedColor(color)}
+                      disabled={isProductSold}
                       className={`px-4 py-2 rounded-lg border-2 transition-all ${
-                        selectedColor === color
-                          ? 'border-accent bg-accent text-white'
-                          : 'border-gray-200 hover:border-accent text-gray-700'
+                        isProductSold
+                          ? 'border-gray-200 text-gray-400 cursor-not-allowed bg-gray-50'
+                          : selectedColor === color
+                            ? 'border-accent bg-accent text-white'
+                            : 'border-gray-200 hover:border-accent text-gray-700'
                       }`}
                     >
                       {color}
@@ -403,17 +466,27 @@ function ProductDetailContent({ id }: { id: string }) {
             {/* Quantity and Add to Cart */}
             <div className="space-y-4 pt-4">
               <div className="flex gap-4">
-                <div className="flex items-center border border-gray-200 rounded-lg">
+                <div className={`flex items-center border rounded-lg ${
+                  isProductSold ? 'border-gray-200' : 'border-gray-200'
+                }`}>
                   <button
-                    onClick={() => setQuantity(Math.max(1, quantity - 1))}
-                    className="px-4 py-3 hover:bg-gray-50 transition-colors text-lg"
+                    onClick={() => !isProductSold && setQuantity(Math.max(1, quantity - 1))}
+                    disabled={isProductSold}
+                    className={`px-4 py-3 transition-colors text-lg ${
+                      isProductSold ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'
+                    }`}
                   >
                     -
                   </button>
-                  <span className="w-12 text-center font-semibold">{quantity}</span>
+                  <span className={`w-12 text-center font-semibold ${isProductSold ? 'text-gray-400' : ''}`}>
+                    {quantity}
+                  </span>
                   <button
-                    onClick={() => setQuantity(Math.min(product.stock, quantity + 1))}
-                    className="px-4 py-3 hover:bg-gray-50 transition-colors text-lg"
+                    onClick={() => !isProductSold && setQuantity(Math.min(product.stock, quantity + 1))}
+                    disabled={isProductSold}
+                    className={`px-4 py-3 transition-colors text-lg ${
+                      isProductSold ? 'text-gray-400 cursor-not-allowed' : 'hover:bg-gray-50'
+                    }`}
                   >
                     +
                   </button>
@@ -421,25 +494,32 @@ function ProductDetailContent({ id }: { id: string }) {
 
                 <button
                   onClick={handleAddToCart}
-                  disabled={product.stock === 0}
+                  disabled={isProductSold || product.stock === 0}
                   className={`flex-1 py-4 font-semibold rounded-lg transition-all flex items-center justify-center gap-2 ${
-                    product.stock === 0
+                    isProductSold || product.stock === 0
                       ? 'bg-gray-300 cursor-not-allowed text-gray-500'
                       : 'bg-accent text-white hover:bg-accent/90'
                   }`}
                 >
                   <ShoppingBag size={20} />
-                  {product.stock === 0 
-                    ? 'Out of Stock' 
-                    : addedToCart 
-                      ? 'Added to Cart!' 
-                      : `Add to Cart - ${displayNaira(totalPrice)}`
+                  {isProductSold 
+                    ? 'Sold Out' 
+                    : product.stock === 0 
+                      ? 'Out of Stock' 
+                      : addedToCart 
+                        ? 'Added to Cart!' 
+                        : `Add to Cart - ${displayNaira(totalPrice)}`
                   }
                 </button>
 
                 <button
-                  onClick={() => setIsFavorite(!isFavorite)}
-                  className="p-4 border border-gray-200 rounded-lg hover:border-red-500 hover:text-red-500 transition-all"
+                  onClick={() => !isProductSold && setIsFavorite(!isFavorite)}
+                  disabled={isProductSold}
+                  className={`p-4 border rounded-lg transition-all ${
+                    isProductSold 
+                      ? 'border-gray-200 text-gray-400 cursor-not-allowed' 
+                      : 'border-gray-200 hover:border-red-500 hover:text-red-500'
+                  }`}
                 >
                   <Heart
                     size={20}
@@ -447,24 +527,35 @@ function ProductDetailContent({ id }: { id: string }) {
                   />
                 </button>
               </div>
+              
+              {isProductSold && (
+                <div className="bg-red-50 border border-red-200 rounded-lg p-3 text-center">
+                  <p className="text-red-600 text-sm font-medium">
+                    This product has been sold out. Check out our other stunning pieces!
+                  </p>
+                  <Link href="/shop" className="text-accent text-sm font-medium hover:underline inline-block mt-1">
+                    Browse other products →
+                  </Link>
+                </div>
+              )}
             </div>
 
             {/* Features */}
             <div className="border-t border-gray-100 pt-6 grid grid-cols-3 gap-4">
               <div className="text-center">
-                <Truck className="w-5 h-5 text-accent mx-auto mb-2" />
-                <p className="text-xs text-gray-500">Free Shipping</p>
-                <p className="text-xs text-gray-400">On orders over ₦500k</p>
+                <Truck className={`w-5 h-5 mx-auto mb-2 ${isProductSold ? 'text-gray-400' : 'text-accent'}`} />
+                <p className={`text-xs ${isProductSold ? 'text-gray-400' : 'text-gray-500'}`}>Free Shipping</p>
+                <p className={`text-xs ${isProductSold ? 'text-gray-300' : 'text-gray-400'}`}>On orders over ₦500k</p>
               </div>
               <div className="text-center">
-                <Shield className="w-5 h-5 text-accent mx-auto mb-2" />
-                <p className="text-xs text-gray-500">Secure Payment</p>
-                <p className="text-xs text-gray-400">100% protected</p>
+                <Shield className={`w-5 h-5 mx-auto mb-2 ${isProductSold ? 'text-gray-400' : 'text-accent'}`} />
+                <p className={`text-xs ${isProductSold ? 'text-gray-400' : 'text-gray-500'}`}>Secure Payment</p>
+                <p className={`text-xs ${isProductSold ? 'text-gray-300' : 'text-gray-400'}`}>100% protected</p>
               </div>
               <div className="text-center">
-                <RefreshCw className="w-5 h-5 text-accent mx-auto mb-2" />
-                <p className="text-xs text-gray-500">Easy Returns</p>
-                <p className="text-xs text-gray-400">30 days return</p>
+                <RefreshCw className={`w-5 h-5 mx-auto mb-2 ${isProductSold ? 'text-gray-400' : 'text-accent'}`} />
+                <p className={`text-xs ${isProductSold ? 'text-gray-400' : 'text-gray-500'}`}>Easy Returns</p>
+                <p className={`text-xs ${isProductSold ? 'text-gray-300' : 'text-gray-400'}`}>30 days return</p>
               </div>
             </div>
           </motion.div>

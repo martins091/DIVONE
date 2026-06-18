@@ -23,6 +23,10 @@ interface Product {
   isNew: boolean;
   isFeatured: boolean;
   description: string;
+  // NEW FIELDS
+  isSold?: boolean;
+  status?: string;
+  soldDate?: string | null;
 }
 
 export default function ShopPage() {
@@ -65,6 +69,10 @@ export default function ShopPage() {
             isNew: p.isNew || !p.originalPrice,
             isFeatured: p.isFeatured || false,
             description: p.description,
+            // NEW FIELDS
+            isSold: p.isSold || false,
+            status: p.status || 'available',
+            soldDate: p.soldDate || null,
           }));
           
           setProducts(mappedProducts);
@@ -326,110 +334,157 @@ export default function ShopPage() {
                 ? "grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
                 : "space-y-6"
               }>
-                {filteredProducts.map((product, index) => (
-                  <motion.div
-                    key={product.id}
-                    initial={{ opacity: 0, y: 20 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.6, delay: index * 0.05 }}
-                    onMouseEnter={() => setHoveredProduct(product.id)}
-                    onMouseLeave={() => setHoveredProduct(null)}
-                    className={viewMode === 'list' ? "flex gap-6 bg-white rounded-xl p-4 shadow-sm" : ""}
-                  >
-                    <Link href={`/products/${product.id}`} className={viewMode === 'list' ? "flex-1 flex gap-6" : "block"}>
-                      {/* Product Image */}
-                      <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${getPlaceholderColor(product.category)} group ${
-                        viewMode === 'grid' ? 'aspect-[3/4]' : 'w-48 h-48 flex-shrink-0'
-                      }`}>
-                        {product.image && product.image.startsWith('http') ? (
-                          <img
-                            src={product.image}
-                            alt={product.name}
-                            className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                          />
-                        ) : (
-                          <div className="w-full h-full flex items-center justify-center">
-                            <span className="text-4xl font-serif text-gray-400">{product.name.charAt(0)}</span>
-                          </div>
-                        )}
-                        
-                        {/* Badges */}
-                        <div className="absolute top-3 left-3 flex flex-col gap-2">
-                          {product.originalPrice && (
-                            <span className="px-2 py-1 bg-accent text-white text-xs font-medium rounded">
-                              SALE
-                            </span>
-                          )}
-                          {product.isNew && (
-                            <span className="px-2 py-1 bg-black/80 backdrop-blur text-white text-xs font-medium rounded">
-                              NEW
-                            </span>
-                          )}
-                        </div>
-
-                        {/* Wishlist Button */}
-                        <button
-                          onClick={(e) => toggleFavorite(e, product.id)}
-                          className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full hover:bg-white transition transform hover:scale-110"
-                        >
-                          <Heart
-                            size={16}
-                            className={favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-700'}
-                          />
-                        </button>
-
-                        {/* Quick View Overlay */}
-                        <div className={`absolute inset-0 bg-black/50 flex items-center justify-center gap-3 transition-all duration-300 ${
-                          hoveredProduct === product.id ? 'opacity-100' : 'opacity-0'
+                {filteredProducts.map((product, index) => {
+                  // Check if product is sold
+                  const isSold = product.isSold || product.status === 'sold' || product.stock === 0;
+                  
+                  return (
+                    <motion.div
+                      key={product.id}
+                      initial={{ opacity: 0, y: 20 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ duration: 0.6, delay: index * 0.05 }}
+                      onMouseEnter={() => setHoveredProduct(product.id)}
+                      onMouseLeave={() => setHoveredProduct(null)}
+                      className={`${viewMode === 'list' ? "flex gap-6 bg-white rounded-xl p-4 shadow-sm" : ""} ${
+                        isSold ? 'opacity-75' : ''
+                      }`}
+                    >
+                      <Link href={`/products/${product.id}`} className={viewMode === 'list' ? "flex-1 flex gap-6" : "block"}>
+                        {/* Product Image */}
+                        <div className={`relative overflow-hidden rounded-xl bg-gradient-to-br ${getPlaceholderColor(product.category)} group ${
+                          viewMode === 'grid' ? 'aspect-[3/4]' : 'w-48 h-48 flex-shrink-0'
                         }`}>
-                          <button className="p-2 bg-white rounded-full hover:bg-accent hover:text-white transition">
-                            <Eye size={18} />
-                          </button>
-                          <button className="p-2 bg-white rounded-full hover:bg-accent hover:text-white transition">
-                            <ShoppingBag size={18} />
-                          </button>
-                        </div>
-                      </div>
-
-                      {/* Product Info */}
-                      <div className={`mt-4 ${viewMode === 'list' ? 'flex-1 mt-0' : ''}`}>
-                        <h3 className="font-serif text-lg font-semibold text-foreground mb-1 group-hover:text-accent transition line-clamp-1">
-                          {product.name}
-                        </h3>
-                        
-                        <div className="flex items-center gap-2 mb-2">
-                          <div className="flex gap-0.5">
-                            {[...Array(5)].map((_, i) => (
-                              <Star
-                                key={i}
-                                size={14}
-                                className={i < product.rating ? 'fill-accent text-accent' : 'text-gray-300'}
-                              />
-                            ))}
+                          {product.image && product.image.startsWith('http') ? (
+                            <img
+                              src={product.image}
+                              alt={product.name}
+                              className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${
+                                isSold ? 'grayscale' : ''
+                              }`}
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <span className="text-4xl font-serif text-gray-400">{product.name.charAt(0)}</span>
+                            </div>
+                          )}
+                          
+                          {/* SOLD Badge - Large Overlay */}
+                          {isSold && (
+                            <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                              <div className="bg-red-600/90 text-white px-6 py-3 rounded-lg font-bold text-2xl shadow-2xl transform -rotate-12 border-2 border-red-400">
+                                SOLD OUT
+                              </div>
+                            </div>
+                          )}
+                          
+                          {/* Badges */}
+                          <div className="absolute top-3 left-3 flex flex-col gap-2">
+                            {product.originalPrice && !isSold && (
+                              <span className="px-2 py-1 bg-accent text-white text-xs font-medium rounded">
+                                SALE
+                              </span>
+                            )}
+                            {product.isNew && !isSold && (
+                              <span className="px-2 py-1 bg-black/80 backdrop-blur text-white text-xs font-medium rounded">
+                                NEW
+                              </span>
+                            )}
+                            {isSold && (
+                              <span className="px-2 py-1 bg-red-600 text-white text-xs font-medium rounded flex items-center gap-1">
+                                <span className="inline-block w-2 h-2 bg-white rounded-full animate-pulse" />
+                                SOLD
+                              </span>
+                            )}
                           </div>
-                          <span className="text-xs text-gray-400">({product.reviewCount})</span>
-                        </div>
 
-                        <div className="flex items-center gap-2">
-                          <span className="text-xl font-bold text-foreground">
-                            {displayNaira(product.price * 1000)}
-                          </span>
-                          {product.originalPrice && (
-                            <span className="text-sm text-gray-400 line-through">
-                              {displayNaira(product.originalPrice * 1000)}
-                            </span>
+                          {/* Wishlist Button - Hide for sold items */}
+                          {!isSold && (
+                            <button
+                              onClick={(e) => toggleFavorite(e, product.id)}
+                              className="absolute top-3 right-3 p-2 bg-white/90 backdrop-blur rounded-full hover:bg-white transition transform hover:scale-110"
+                            >
+                              <Heart
+                                size={16}
+                                className={favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-gray-700'}
+                              />
+                            </button>
+                          )}
+
+                          {/* Quick View Overlay - Hide for sold items */}
+                          {!isSold && (
+                            <div className={`absolute inset-0 bg-black/50 flex items-center justify-center gap-3 transition-all duration-300 ${
+                              hoveredProduct === product.id ? 'opacity-100' : 'opacity-0'
+                            }`}>
+                              <button className="p-2 bg-white rounded-full hover:bg-accent hover:text-white transition">
+                                <Eye size={18} />
+                              </button>
+                              <button className="p-2 bg-white rounded-full hover:bg-accent hover:text-white transition">
+                                <ShoppingBag size={18} />
+                              </button>
+                            </div>
                           )}
                         </div>
 
-                        {viewMode === 'list' && (
-                          <p className="text-gray-500 text-sm mt-2 line-clamp-2">
-                            {product.description}
-                          </p>
-                        )}
-                      </div>
-                    </Link>
-                  </motion.div>
-                ))}
+                        {/* Product Info */}
+                        <div className={`mt-4 ${viewMode === 'list' ? 'flex-1 mt-0' : ''}`}>
+                          <div className="flex items-start justify-between">
+                            <div>
+                              <h3 className={`font-serif text-lg font-semibold mb-1 transition line-clamp-1 ${
+                                isSold ? 'text-gray-400 line-through' : 'text-foreground group-hover:text-accent'
+                              }`}>
+                                {product.name}
+                              </h3>
+                              {isSold && (
+                                <span className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded-full">
+                                  Currently Unavailable
+                                </span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-2 mb-2">
+                            <div className="flex gap-0.5">
+                              {[...Array(5)].map((_, i) => (
+                                <Star
+                                  key={i}
+                                  size={14}
+                                  className={i < product.rating ? 'fill-accent text-accent' : 'text-gray-300'}
+                                />
+                              ))}
+                            </div>
+                            <span className="text-xs text-gray-400">({product.reviewCount})</span>
+                          </div>
+
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xl font-bold ${
+                              isSold ? 'text-gray-400' : 'text-foreground'
+                            }`}>
+                              {displayNaira(product.price * 1000)}
+                            </span>
+                            {product.originalPrice && !isSold && (
+                              <span className="text-sm text-gray-400 line-through">
+                                {displayNaira(product.originalPrice * 1000)}
+                              </span>
+                            )}
+                          </div>
+
+                          {viewMode === 'list' && !isSold && (
+                            <p className="text-gray-500 text-sm mt-2 line-clamp-2">
+                              {product.description}
+                            </p>
+                          )}
+                          
+                          {viewMode === 'list' && isSold && (
+                            <p className="text-red-500 text-sm mt-2 font-medium">
+                              This item has been sold out.
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    </motion.div>
+                  );
+                })}
               </div>
             )}
           </div>

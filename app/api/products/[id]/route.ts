@@ -13,6 +13,7 @@ export async function GET(
     const { data, error } = await supabase.from('products').select('*').eq('id', id).single();
 
     if (error || !data) {
+      console.error('GET Error:', error);
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
@@ -41,6 +42,68 @@ export async function PUT(
     const { id } = params;
     const body = await req.json();
     const supabase = createSupabaseRouteClient(authorization);
+    
+    console.log('🔵 Updating product:', id);
+    console.log('📦 Update body:', body);
+    
+    // Check if this is a mark as sold operation
+    if (body.isSold !== undefined || body.status === 'sold' || body.status === 'available') {
+      const updateData: any = {};
+      
+      if (body.isSold !== undefined) {
+        updateData.is_sold = body.isSold;
+      }
+      
+      if (body.status) {
+        updateData.status = body.status;
+      }
+      
+      if (body.stock !== undefined) {
+        updateData.stock = body.stock;
+      }
+      
+      if (body.isSold === true || body.status === 'sold') {
+        updateData.sold_date = new Date().toISOString();
+        // Ensure status is set if not explicitly provided
+        if (!body.status) updateData.status = 'sold';
+      }
+      
+      if (body.isSold === false || body.status === 'available') {
+        updateData.sold_date = null;
+        // Ensure status is set if not explicitly provided
+        if (!body.status) updateData.status = 'available';
+      }
+      
+      console.log('🔄 Update data:', updateData);
+      
+      const { data, error } = await supabase
+        .from('products')
+        .update(updateData)
+        .eq('id', id)
+        .select('*')
+        .single();
+
+      if (error) {
+        console.error('❌ Supabase update error:', error);
+        return NextResponse.json({ 
+          error: 'Failed to update product', 
+          details: error.message 
+        }, { status: 500 });
+      }
+
+      if (!data) {
+        return NextResponse.json({ error: 'Product not found after update' }, { status: 404 });
+      }
+
+      console.log('✅ Product updated successfully:', data.id);
+      
+      return NextResponse.json({
+        message: body.isSold ? 'Product marked as sold' : 'Product updated successfully',
+        product: mapProduct(data),
+      });
+    }
+
+    // Regular product update
     const { data, error } = await supabase
       .from('products')
       .update(toProductInsert(body))
@@ -48,17 +111,30 @@ export async function PUT(
       .select('*')
       .single();
 
-    if (error || !data) {
+    if (error) {
+      console.error('❌ Supabase regular update error:', error);
+      return NextResponse.json({ 
+        error: 'Failed to update product', 
+        details: error.message 
+      }, { status: 500 });
+    }
+
+    if (!data) {
       return NextResponse.json({ error: 'Product not found' }, { status: 404 });
     }
 
+    console.log('✅ Product updated successfully:', data.id);
+    
     return NextResponse.json({
       message: 'Product updated successfully',
       product: mapProduct(data),
     });
   } catch (error) {
-    console.error('Error updating product:', error);
-    return NextResponse.json({ error: 'Failed to update product' }, { status: 500 });
+    console.error('❌ Error updating product:', error);
+    return NextResponse.json({ 
+      error: 'Failed to update product', 
+      details: error instanceof Error ? error.message : 'Unknown error'
+    }, { status: 500 });
   }
 }
 
@@ -79,12 +155,13 @@ export async function DELETE(
     const { error } = await supabase.from('products').delete().eq('id', id);
 
     if (error) {
+      console.error('❌ Delete error:', error);
       throw error;
     }
 
     return NextResponse.json({ message: 'Product deleted successfully' });
   } catch (error) {
-    console.error('Error deleting product:', error);
+    console.error('❌ Error deleting product:', error);
     return NextResponse.json({ error: 'Failed to delete product' }, { status: 500 });
   }
 }
