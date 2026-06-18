@@ -30,8 +30,8 @@ export default function TrackOrderPage() {
         throw new Error(result.error || 'Could not find that order');
       }
 
-      const guestToken = result.order.userId ? null : result.order.guestAccessToken;
-      router.push(`/order-tracking/${result.order.id}${guestToken ? `?token=${guestToken}` : ''}`);
+      const accessToken = result.order.guestAccessToken;
+      router.push(`/order-tracking/${result.order.id}${accessToken ? `?token=${accessToken}` : ''}`);
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Could not find that order');
     } finally {

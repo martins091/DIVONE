@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
+import { sendPaymentSubmittedEmail } from '@/lib/email';
 import { mapOrder } from '@/lib/supabase/mappers';
 import { createSupabaseRouteClient, getSupabaseUserFromBearerToken } from '@/lib/supabase/server';
 
@@ -34,6 +35,8 @@ export async function POST(
     if (!data) {
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
+
+    await sendPaymentSubmittedEmail(data);
 
     return NextResponse.json({
       message: 'Payment confirmation received',

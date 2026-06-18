@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { getAdminEmail, sendEmail } from '@/lib/email';
+import { sendOrderCreatedEmails } from '@/lib/email';
 import { isAdminUser } from '@/lib/supabase/admin';
 import { mapCartItem, mapOrder } from '@/lib/supabase/mappers';
 import { createSupabaseRouteClient, getSupabaseUserFromBearerToken } from '@/lib/supabase/server';
@@ -148,6 +148,8 @@ export async function POST(req: NextRequest) {
 
       if (guestOrderError) return createOrderErrorResponse(guestOrderError);
 
+      await sendOrderCreatedEmails(guestOrder);
+
       return NextResponse.json({
         message: 'Order created successfully',
         order: mapOrder(guestOrder),
@@ -196,6 +198,8 @@ export async function POST(req: NextRequest) {
       .select('*, order_items(*)')
       .eq('id', order.id)
       .single();
+
+    await sendOrderCreatedEmails(hydrated || { ...order, order_items: [] });
 
     return NextResponse.json({
       message: 'Order created successfully',

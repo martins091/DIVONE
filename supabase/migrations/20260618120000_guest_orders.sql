@@ -74,7 +74,7 @@ as $$
     and (
       public.is_admin()
       or o.user_id = auth.uid()
-      or (o.user_id is null and o.guest_access_token = p_guest_access_token)
+      or o.guest_access_token = p_guest_access_token
     );
 $$;
 
@@ -99,7 +99,7 @@ begin
     and (
       public.is_admin()
       or user_id = auth.uid()
-      or (user_id is null and guest_access_token = p_guest_access_token)
+      or guest_access_token = p_guest_access_token
     )
   returning * into updated_order;
 

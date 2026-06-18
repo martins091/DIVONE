@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { sendEmail } from '@/lib/email';
+import { sendOrderStatusEmail } from '@/lib/email';
 import { isAdminUser } from '@/lib/supabase/admin';
 import { mapOrder } from '@/lib/supabase/mappers';
 import { createSupabaseRouteClient, getSupabaseUserFromBearerToken } from '@/lib/supabase/server';
@@ -79,6 +79,16 @@ export async function PATCH(
     if (body.trackingNumber !== undefined) updates.tracking_number = body.trackingNumber;
     if (body.notes !== undefined) updates.notes = body.notes;
 
+    const { data: existingOrder, error: existingError } = await supabase
+      .from('orders')
+      .select('status, payment_status')
+      .eq('id', id)
+      .single();
+
+    if (existingError || !existingOrder) {
+      return NextResponse.json({ error: 'Order not found' }, { status: 404 });
+    }
+
     const { data, error } = await supabase
       .from('orders')
       .update(updates)
@@ -90,16 +100,10 @@ export async function PATCH(
       return NextResponse.json({ error: 'Order not found' }, { status: 404 });
     }
 
-    if (body.paymentStatus === 'completed' || body.status === 'confirmed') {
-      const email = data.shipping_address?.email;
-      if (email) {
-        await sendEmail({
-          to: email,
-          subject: `DIVONE order ${data.order_number} approved`,
-          html: `<p>Your order <strong>${data.order_number}</strong> has been approved.</p><p>Status: ${data.status}</p><p>You can track it from your DIVONE account.</p>`,
-        });
-      }
-    }
+    await sendOrderStatusEmail(data, {
+      status: existingOrder.status,
+      paymentStatus: existingOrder.payment_status,
+    });
 
     return NextResponse.json({ message: 'Order updated successfully', order: mapOrder(data) });
   } catch (error) {
