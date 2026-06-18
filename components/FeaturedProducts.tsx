@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { motion } from 'framer-motion';
-import { Star, Heart, ShoppingBag, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Star, Heart, ShoppingBag, ChevronLeft, ChevronRight, XCircle } from 'lucide-react';
 import { useState, useRef, useEffect } from 'react';
 import { displayNaira } from '@/lib/currency';
 
@@ -23,6 +23,10 @@ interface Product {
   isNew: boolean;
   isFeatured: boolean;
   description: string;
+  // NEW FIELDS
+  isSold?: boolean;
+  status?: string;
+  soldDate?: string | null;
 }
 
 export default function FeaturedProducts() {
@@ -62,6 +66,10 @@ export default function FeaturedProducts() {
             isNew: p.isNew || !p.originalPrice,
             isFeatured: p.isFeatured || false,
             description: p.description,
+            // NEW FIELDS
+            isSold: p.isSold || false,
+            status: p.status || 'available',
+            soldDate: p.soldDate || null,
           }));
 
           allProducts = [...mappedFeatured];
@@ -93,6 +101,10 @@ export default function FeaturedProducts() {
               isNew: p.isNew || !p.originalPrice,
               isFeatured: p.isFeatured || false,
               description: p.description,
+              // NEW FIELDS
+              isSold: p.isSold || false,
+              status: p.status || 'available',
+              soldDate: p.soldDate || null,
             }));
 
             // Merge and deduplicate
@@ -245,6 +257,9 @@ export default function FeaturedProducts() {
           style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
         >
           {products.map((product, index) => {
+            // Check if product is sold
+            const isSold = product.isSold || product.status === 'sold' || product.stock === 0;
+            
             // Calculate discount percentage if originalPrice exists
             const discountPercentage = product.originalPrice 
               ? Math.round(((product.originalPrice - product.price) / product.originalPrice) * 100)
@@ -257,7 +272,9 @@ export default function FeaturedProducts() {
                 whileInView={{ opacity: 1, scale: 1 }}
                 transition={{ duration: 0.5, delay: index * 0.05 }}
                 viewport={{ once: true }}
-                className="min-w-[280px] sm:min-w-[300px] lg:min-w-[320px] snap-start"
+                className={`min-w-[280px] sm:min-w-[300px] lg:min-w-[320px] snap-start ${
+                  isSold ? 'opacity-75' : ''
+                }`}
               >
                 <Link href={`/products/${product.id}`}>
                   <div className="group">
@@ -266,7 +283,9 @@ export default function FeaturedProducts() {
                         <img
                           src={product.image}
                           alt={product.name}
-                          className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                          className={`w-full h-full object-cover transition-transform duration-700 group-hover:scale-110 ${
+                            isSold ? 'grayscale' : ''
+                          }`}
                         />
                       ) : (
                         <div className="w-full h-full flex items-center justify-center">
@@ -274,43 +293,75 @@ export default function FeaturedProducts() {
                         </div>
                       )}
                       
+                      {/* SOLD OUT Overlay */}
+                      {isSold && (
+                        <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                          <div className="bg-red-600/90 text-white px-4 py-2 rounded-lg font-bold text-xl shadow-2xl transform -rotate-12 border-2 border-red-400">
+                            SOLD OUT
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
                       
-                      {discountPercentage && discountPercentage > 0 && (
-                        <span className="absolute top-4 left-4 px-3 py-1 bg-accent text-white text-xs font-medium rounded-full">
-                          -{discountPercentage}%
-                        </span>
-                      )}
-
-                      {product.isNew && (
-                        <span className="absolute top-4 left-4 px-3 py-1 bg-black/80 backdrop-blur text-white text-xs font-medium rounded-full">
-                          NEW
-                        </span>
-                      )}
-
-                      <button
-                        onClick={(e) => toggleFavorite(e, product.id)}
-                        className="absolute top-4 right-4 p-2 bg-white/90 rounded-full opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0"
-                      >
-                        <Heart
-                          size={18}
-                          className={favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-foreground'}
-                        />
-                      </button>
-
-                      <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
-                        <button className="w-full py-3 bg-white text-foreground rounded-lg font-medium hover:bg-accent hover:text-white transition-colors flex items-center justify-center gap-2">
-                          <ShoppingBag size={18} />
-                          Quick Add
-                        </button>
+                      {/* Badges */}
+                      <div className="absolute top-4 left-4 flex flex-col gap-2">
+                        {discountPercentage && discountPercentage > 0 && !isSold && (
+                          <span className="px-3 py-1 bg-accent text-white text-xs font-medium rounded-full">
+                            -{discountPercentage}%
+                          </span>
+                        )}
+                        {product.isNew && !isSold && (
+                          <span className="px-3 py-1 bg-black/80 backdrop-blur text-white text-xs font-medium rounded-full">
+                            NEW
+                          </span>
+                        )}
+                        {isSold && (
+                          <span className="px-3 py-1 bg-red-600 text-white text-xs font-medium rounded-full flex items-center gap-1">
+                            <XCircle className="w-3 h-3" />
+                            SOLD
+                          </span>
+                        )}
                       </div>
+
+                      {/* Favorite Button - Hide for sold items */}
+                      {!isSold && (
+                        <button
+                          onClick={(e) => toggleFavorite(e, product.id)}
+                          className="absolute top-4 right-4 p-2 bg-white/90 rounded-full opacity-0 group-hover:opacity-100 transition-all transform translate-y-2 group-hover:translate-y-0"
+                        >
+                          <Heart
+                            size={18}
+                            className={favorites.includes(product.id) ? 'fill-red-500 text-red-500' : 'text-foreground'}
+                          />
+                        </button>
+                      )}
+
+                      {/* Quick Add Button - Hide for sold items */}
+                      {!isSold && (
+                        <div className="absolute inset-x-0 bottom-0 p-4 translate-y-full group-hover:translate-y-0 transition-transform duration-300">
+                          <button className="w-full py-3 bg-white text-foreground rounded-lg font-medium hover:bg-accent hover:text-white transition-colors flex items-center justify-center gap-2">
+                            <ShoppingBag size={18} />
+                            Quick Add
+                          </button>
+                        </div>
+                      )}
                     </div>
 
                     <div className="mt-4 text-center">
-                      <p className="text-xs text-accent font-medium mb-1">{product.category}</p>
-                      <h3 className="font-serif font-semibold text-foreground mb-2 group-hover:text-accent transition-colors line-clamp-1">
+                      <p className={`text-xs font-medium mb-1 ${isSold ? 'text-gray-400' : 'text-accent'}`}>
+                        {product.category}
+                      </p>
+                      <h3 className={`font-serif font-semibold mb-2 group-hover:text-accent transition-colors line-clamp-1 ${
+                        isSold ? 'text-gray-400 line-through' : 'text-foreground'
+                      }`}>
                         {product.name}
                       </h3>
+                      {isSold && (
+                        <p className="text-xs text-red-600 font-semibold bg-red-50 px-2 py-0.5 rounded-full inline-block mb-2">
+                          Sold Out
+                        </p>
+                      )}
                       <div className="flex items-center justify-center gap-1 mb-2">
                         <div className="flex gap-0.5">
                           {[...Array(5)].map((_, i) => (
@@ -324,10 +375,10 @@ export default function FeaturedProducts() {
                         <span className="text-xs text-foreground/50">({product.reviewCount})</span>
                       </div>
                       <div className="flex items-center justify-center gap-2">
-                        <span className="text-lg font-bold text-foreground">
+                        <span className={`text-lg font-bold ${isSold ? 'text-gray-400' : 'text-foreground'}`}>
                           {displayNaira(product.price * 1000)}
                         </span>
-                        {product.originalPrice && (
+                        {product.originalPrice && !isSold && (
                           <span className="text-sm text-foreground/40 line-through">
                             {displayNaira(product.originalPrice * 1000)}
                           </span>
