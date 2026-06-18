@@ -81,12 +81,12 @@ export default function BlogPostPage() {
             <div className="flex items-center gap-4">
               <div className="w-14 h-14 rounded-full bg-gradient-to-r from-accent to-pink-500 flex items-center justify-center">
                 <span className="text-white text-xl font-semibold">
-                  {post.author.charAt(0)}
+                  D
                 </span>
               </div>
               <div>
-                <p className="text-white font-medium">{post.author}</p>
-                <p className="text-white/40 text-sm">Contributing Editor</p>
+                <p className="text-white font-medium">Divone Editor</p>
+                <p className="text-white/40 text-sm">Editorial Team</p>
               </div>
             </div>
 

@@ -6,52 +6,46 @@ import { useState } from 'react';
 
 const testimonials = [
   {
-    name: 'Sarah Mitchell',
+    name: 'Chidinma Eze',
     role: 'Fashion Enthusiast',
     content: 'The quality of pieces at DIVONE is unparalleled. Every item feels like an investment in elegance. The attention to detail and customer service is exceptional.',
     rating: 5,
-    image: 'mainpink1.jpeg',
-    location: 'New York, USA',
+    location: 'Lagos, Nigeria',
   },
   {
-    name: 'Emma Richardson',
+    name: 'Ngozi Okonkwo',
     role: 'Executive Director',
     content: 'I recommend DIVONE to all my colleagues. The collections are sophisticated and timeless. Finally, a brand that understands modern professional women.',
     rating: 5,
-    image: 'blog3.jpeg',
-    location: 'London, UK',
+    location: 'Abuja, Nigeria',
   },
   {
-    name: 'Jessica Thompson',
+    name: 'Folake Adeyemi',
     role: 'Celebrity Stylist',
     content: 'DIVONE understands luxury fashion better than anyone. Their curation is impeccable and the craftsmanship is world-class. Absolutely stunning pieces.',
     rating: 5,
-    image: 'blog6.jpeg',
-    location: 'Los Angeles, USA',
+    location: 'Lagos, Nigeria',
   },
   {
     name: 'Amara Okafor',
     role: 'Creative Director',
     content: 'As someone who appreciates fine craftsmanship, DIVONE has exceeded my expectations. The pieces are not just clothing, they\'re works of art.',
     rating: 5,
-    image: 'blog5.jpeg',
-    location: 'Lagos, Nigeria',
+    location: 'Port Harcourt, Nigeria',
   },
   {
-    name: 'Isabella Santos',
+    name: 'Ifeoma Obi',
     role: 'Luxury Blogger',
     content: 'DIVONE has become my go-to for statement pieces. The quality is unmatched and every purchase feels special. Truly a premium experience.',
     rating: 5,
-    image: 'blog6.jpeg',
-    location: 'São Paulo, Brazil',
+    location: 'Enugu, Nigeria',
   },
   {
-    name: 'Naomi Chen',
+    name: 'Chioma Nwachukwu',
     role: 'Fashion Editor',
     content: 'The attention to detail in every DIVONE piece is remarkable. It\'s refreshing to see a brand that prioritizes quality over quantity.',
     rating: 5,
-    image: 'mainpink1.jpeg',
-    location: 'Singapore',
+    location: 'Ibadan, Nigeria',
   },
 ];
 
@@ -143,13 +137,11 @@ export default function Testimonials() {
 
                 {/* Author */}
                 <div className="flex items-center gap-4">
-                  <div className="relative">
-                    <img
-                      src={testimonial.image}
-                      alt={testimonial.name}
-                      className="w-14 h-14 rounded-full object-cover ring-2 ring-accent/20 group-hover:ring-accent/50 transition-all"
-                    />
-                    <div className="absolute -bottom-1 -right-1 w-4 h-4 bg-green-500 rounded-full border-2 border-white" />
+                  {/* Avatar placeholder - initials */}
+                  <div className="w-14 h-14 rounded-full bg-gradient-to-br from-accent/20 to-accent/5 flex items-center justify-center ring-2 ring-accent/20 group-hover:ring-accent/50 transition-all">
+                    <span className="text-accent font-semibold text-lg">
+                      {testimonial.name.split(' ').map(n => n[0]).join('')}
+                    </span>
                   </div>
                   <div>
                     <h4 className="font-semibold text-foreground text-lg">

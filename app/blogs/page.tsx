@@ -167,12 +167,12 @@ export default function BlogPage() {
                   <div className="flex items-center gap-3">
                     <div className="w-12 h-12 rounded-full bg-gradient-to-r from-accent to-pink-500 flex items-center justify-center">
                       <span className="text-white font-semibold text-lg">
-                        {featuredPost.author.charAt(0)}
+                        D
                       </span>
                     </div>
                     <div>
-                      <p className="text-white font-medium">{featuredPost.author}</p>
-                      <p className="text-white/40 text-sm">Editor</p>
+                      <p className="text-white font-medium">Divone Editor</p>
+                      <p className="text-white/40 text-sm">Editorial Team</p>
                     </div>
                   </div>
                   
@@ -257,10 +257,10 @@ export default function BlogPage() {
                     <div className="flex items-center gap-2">
                       <div className="w-8 h-8 rounded-full bg-gradient-to-r from-accent/50 to-pink-500/50 flex items-center justify-center">
                         <span className="text-white text-xs font-semibold">
-                          {post.author.charAt(0)}
+                          D
                         </span>
                       </div>
-                      <span className="text-white/60 text-sm">{post.author}</span>
+                      <span className="text-white/60 text-sm">Divone Team</span>
                     </div>
                     
                     <div className="flex items-center gap-3 text-white/40">

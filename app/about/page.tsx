@@ -215,7 +215,7 @@ export default function About() {
 
   
 
-      {/* Testimonial Section */}
+     {/* Testimonial Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
@@ -236,20 +236,19 @@ export default function About() {
               is exceptional, and their customer service is unparalleled. I wouldn&apos;t shop anywhere else.&quot;
             </p>
             <div className="flex items-center justify-center gap-4">
-              <img
-                src="https://images.unsplash.com/photo-1494790108377-be9c29b29330?q=80&w=100&auto=format"
-                alt="Customer"
-                className="w-12 h-12 rounded-full object-cover"
-              />
+              {/* Avatar placeholder - initials */}
+              <div className="w-12 h-12 rounded-full bg-gradient-to-br from-accent/40 to-accent/20 flex items-center justify-center ring-2 ring-accent/30">
+                <span className="text-white font-semibold text-md">CE</span>
+              </div>
               <div className="text-left">
-                <p className="font-semibold text-white">Sarah Mitchell</p>
+                <p className="font-semibold text-white">Chidinma Eze</p>
                 <p className="text-white/60 text-sm">Loyal Customer since 2020</p>
               </div>
             </div>
           </div>
         </motion.div>
       </section>
-
+      
       {/* CTA Section */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-20">
         <motion.div
