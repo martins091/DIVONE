@@ -16,7 +16,7 @@ interface Product {
   stock: number;
   description?: string;
   image?: string;
-  isSold?: boolean;
+  isSold?: boolean;  // Changed from is_sold to isSold to match user page
   status?: 'available' | 'sold' | 'out_of_stock';
 }
 
@@ -26,25 +26,35 @@ export default function ManageProducts() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [processingId, setProcessingId] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState('');
+
+  const fetchProducts = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/products');
+      const data = await response.json();
+
+      if (!response.ok) {
+        throw new Error(data.error || 'Failed to fetch products');
+      }
+
+      // Map the data to ensure consistent field names
+      const mappedProducts = data.products?.map((p: any) => ({
+        ...p,
+        // Ensure both field names are available
+        isSold: p.isSold || p.is_sold || false,
+        status: p.status || (p.isSold || p.is_sold ? 'sold' : 'available'),
+      }));
+
+      setProducts(mappedProducts || []);
+    } catch (error) {
+      setError(error instanceof Error ? error.message : 'Failed to fetch products');
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchProducts = async () => {
-      try {
-        const response = await fetch('/api/products');
-        const data = await response.json();
-
-        if (!response.ok) {
-          throw new Error(data.error || 'Failed to fetch products');
-        }
-
-        setProducts(data.products || []);
-      } catch (error) {
-        setError(error instanceof Error ? error.message : 'Failed to fetch products');
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchProducts();
   }, []);
 
@@ -72,7 +82,8 @@ export default function ManageProducts() {
         throw new Error(data.error || 'Failed to delete product');
       }
 
-      setProducts(products.filter(p => p.id !== id));
+      await fetchProducts();
+      setSuccessMessage('Product deleted successfully');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to delete product');
     }
@@ -82,6 +93,9 @@ export default function ManageProducts() {
     if (!confirm('Mark this product as sold? This will set stock to 0.')) return;
 
     setProcessingId(id);
+    setError('');
+    setSuccessMessage('');
+    
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -90,7 +104,7 @@ export default function ManageProducts() {
         throw new Error('Please sign in again.');
       }
 
-      // Use the existing PUT endpoint
+      // Use camelCase to match the user page
       const response = await fetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: {
@@ -98,7 +112,7 @@ export default function ManageProducts() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ 
-          isSold: true, 
+          isSold: true,      // Camel case
           status: 'sold', 
           stock: 0 
         }),
@@ -110,14 +124,8 @@ export default function ManageProducts() {
         throw new Error(data.error || 'Failed to mark product as sold');
       }
 
-      // Update the product in the local state
-      setProducts(products.map(p => 
-        p.id === id 
-          ? { ...p, isSold: true, status: 'sold', stock: 0 }
-          : p
-      ));
-
-      setError('');
+      await fetchProducts();
+      setSuccessMessage('Product marked as sold successfully!');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to mark product as sold');
     } finally {
@@ -129,6 +137,9 @@ export default function ManageProducts() {
     if (!confirm('Mark this product as available again?')) return;
 
     setProcessingId(id);
+    setError('');
+    setSuccessMessage('');
+    
     try {
       const { data: sessionData } = await supabase.auth.getSession();
       const token = sessionData.session?.access_token;
@@ -137,7 +148,7 @@ export default function ManageProducts() {
         throw new Error('Please sign in again.');
       }
 
-      // Use the existing PUT endpoint
+      // Use camelCase to match the user page
       const response = await fetch(`/api/products/${id}`, {
         method: 'PUT',
         headers: {
@@ -145,8 +156,9 @@ export default function ManageProducts() {
           Authorization: `Bearer ${token}`,
         },
         body: JSON.stringify({ 
-          isSold: false, 
-          status: 'available' 
+          isSold: false,     // Camel case
+          status: 'available',
+          stock: 1
         }),
       });
 
@@ -156,14 +168,8 @@ export default function ManageProducts() {
         throw new Error(data.error || 'Failed to mark product as available');
       }
 
-      // Update the product in the local state
-      setProducts(products.map(p => 
-        p.id === id 
-          ? { ...p, isSold: false, status: 'available' }
-          : p
-      ));
-
-      setError('');
+      await fetchProducts();
+      setSuccessMessage('Product marked as available successfully!');
     } catch (error) {
       setError(error instanceof Error ? error.message : 'Failed to mark product as available');
     } finally {
@@ -184,17 +190,34 @@ export default function ManageProducts() {
             <h1 className="text-2xl font-serif font-bold text-gray-800">Manage Products</h1>
             <p className="text-gray-500">Add, edit, or remove products from your store</p>
           </div>
-          <Link href="/admin/products/new">
-            <button className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition">
-              <Plus className="w-5 h-5" />
-              Add Product
+          <div className="flex gap-3">
+            <button
+              onClick={fetchProducts}
+              className="flex items-center gap-2 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-200 transition"
+            >
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+              </svg>
+              Refresh
             </button>
-          </Link>
+            <Link href="/admin/products/new">
+              <button className="flex items-center gap-2 bg-accent text-white px-4 py-2 rounded-lg hover:bg-accent/90 transition">
+                <Plus className="w-5 h-5" />
+                Add Product
+              </button>
+            </Link>
+          </div>
         </div>
 
         {error && (
           <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
             {error}
+          </div>
+        )}
+
+        {successMessage && (
+          <div className="mb-6 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm text-green-700">
+            {successMessage}
           </div>
         )}
 
@@ -220,7 +243,10 @@ export default function ManageProducts() {
         ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
           {filteredProducts.map((product, index) => {
-            const isSold = product.isSold || product.status === 'sold' || product.stock === 0;
+            // Check using the correct field name (isSold)
+            const isSold = product.isSold === true || 
+                          product.status === 'sold' || 
+                          product.stock === 0;
             
             return (
               <motion.div
