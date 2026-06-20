@@ -1,7 +1,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { Mail, Phone, MapPin, Clock, Send, CheckCircle, Facebook, Instagram, Twitter, Youtube, MapPinned, Headphones, MessageCircle } from 'lucide-react';
+import { Mail, Phone, Clock, Send, CheckCircle, Instagram, MapPinned, Headphones, MessageCircle } from 'lucide-react';
 import { useState } from 'react';
 import Link from 'next/link';
 
@@ -37,65 +37,29 @@ export default function Contact() {
     {
       icon: Mail,
       title: 'Email Us',
-      info: 'hello@divone.com',
-      secondary: 'support@divone.com',
-      response: 'We respond within 24 hours',
+      info: 'divonestore3@gmail.com',
+      secondary: 'We respond within 24 hours',
+      response: '24/7 Support Available',
       color: 'from-blue-500/20 to-blue-600/20',
       iconColor: 'text-blue-500'
     },
     {
       icon: Phone,
       title: 'Call Us',
-      info: '+1 (555) 123-4567',
-      secondary: '+1 (555) 987-6543',
-      response: 'Mon - Fri, 10am - 6pm EST',
+      info: '08060611037',
+      secondary: 'Available 24/7',
+      response: 'Call or WhatsApp',
       color: 'from-green-500/20 to-green-600/20',
       iconColor: 'text-green-500'
     },
     {
-      icon: MapPin,
-      title: 'Visit Us',
-      info: '123 Fifth Avenue',
-      secondary: 'New York, NY 10016',
-      response: 'Showroom by appointment',
-      color: 'from-purple-500/20 to-purple-600/20',
-      iconColor: 'text-purple-500'
-    },
-    {
       icon: Clock,
       title: 'Business Hours',
-      info: 'Monday - Friday: 10am - 6pm',
-      secondary: 'Saturday - Sunday: 12pm - 5pm',
-      response: 'Closed on major holidays',
+      info: 'Monday - Sunday: 24/7',
+      secondary: 'Always Open',
+      response: 'We\'re here whenever you need us',
       color: 'from-orange-500/20 to-orange-600/20',
       iconColor: 'text-orange-500'
-    },
-  ];
-
-  const faqs = [
-    {
-      q: 'What is your return policy?',
-      a: 'We offer a 30-day return policy on all items. Products must be unused, in original condition, and with all tags attached.',
-    },
-    {
-      q: 'Do you offer international shipping?',
-      a: 'Yes, we ship to over 100 countries worldwide. Shipping costs and delivery times vary by location.',
-    },
-    {
-      q: 'How can I track my order?',
-      a: 'You will receive a tracking number via email once your order ships. You can also track your order in your account dashboard.',
-    },
-    {
-      q: 'Do you offer gift wrapping?',
-      a: 'Yes! Premium gift wrapping is available at checkout for a small additional fee.',
-    },
-    {
-      q: 'How do I care for my items?',
-      a: 'Each product comes with specific care instructions. Most of our pieces are dry clean only for longevity.',
-    },
-    {
-      q: 'Can I modify my order after placing it?',
-      a: 'Please contact us within 1 hour of placing your order to request modifications.',
     },
   ];
 
@@ -135,7 +99,7 @@ export default function Contact() {
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
         {/* Contact Methods Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-20">
           {contactMethods.map((method, index) => (
             <motion.div
               key={index}
@@ -285,27 +249,6 @@ export default function Contact() {
             viewport={{ once: true }}
             className="space-y-6"
           >
-            {/* Map Card */}
-            <div className="bg-white rounded-2xl shadow-xl overflow-hidden">
-              <div className="p-6 border-b border-gray-100">
-                <div className="flex items-center gap-2">
-                  <MapPinned className="w-5 h-5 text-accent" />
-                  <h3 className="font-semibold text-foreground">Find Us</h3>
-                </div>
-              </div>
-              <div className="h-64 bg-gray-100 relative">
-                <iframe
-                  src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3024.2219901290355!2d-74.00369368400567!3d40.70512987933041!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x89c25a316bb6b1cb%3A0xb89d1fe6bc499443!2sDowntown%20Conference%20Center!5e0!3m2!1sen!2sus!4v1699999999999!5m2!1sen!2sus"
-                  width="100%"
-                  height="100%"
-                  style={{ border: 0 }}
-                  allowFullScreen
-                  loading="lazy"
-                  referrerPolicy="no-referrer-when-downgrade"
-                  title="Store Location"
-                />
-              </div>
-            </div>
 
             {/* Social Connect */}
             <div className="bg-white rounded-2xl shadow-xl p-6">
@@ -314,69 +257,31 @@ export default function Contact() {
                 <h3 className="font-semibold text-foreground">Connect With Us</h3>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <a href="#" className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gradient-to-r hover:from-pink-500 hover:to-purple-500 group transition-all">
+                <a 
+                  href="https://instagram.com/divonestore" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-gradient-to-r hover:from-pink-500 hover:to-purple-500 group transition-all"
+                >
                   <Instagram className="w-5 h-5 text-pink-500 group-hover:text-white" />
                   <span className="text-sm text-gray-600 group-hover:text-white">Instagram</span>
                 </a>
-                <a href="#" className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-[#1877f2] group transition-all">
-                  <Facebook className="w-5 h-5 text-blue-600 group-hover:text-white" />
-                  <span className="text-sm text-gray-600 group-hover:text-white">Facebook</span>
-                </a>
-                <a href="#" className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-black group transition-all">
-                  <Twitter className="w-5 h-5 text-black group-hover:text-white" />
-                  <span className="text-sm text-gray-600 group-hover:text-white">Twitter</span>
-                </a>
-                <a href="#" className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-red-600 group transition-all">
-                  <Youtube className="w-5 h-5 text-red-600 group-hover:text-white" />
-                  <span className="text-sm text-gray-600 group-hover:text-white">YouTube</span>
+                <a 
+                  href="https://tiktok.com/@divonestore" 
+                  target="_blank" 
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl hover:bg-black group transition-all"
+                >
+                  <svg className="w-5 h-5 text-black group-hover:text-white" viewBox="0 0 24 24" fill="currentColor">
+                    <path d="M19.59 6.69a4.83 4.83 0 0 1-3.77-4.25V2h-3.45v13.67a2.89 2.89 0 0 1-5.2 1.74 2.89 2.89 0 0 1 2.31-4.64 2.93 2.93 0 0 1 .88.13V9.4a6.84 6.84 0 0 0-1-.05A6.33 6.33 0 0 0 5 20.1a6.34 6.34 0 0 0 10.86-4.43v-7a8.16 8.16 0 0 0 4.77 1.52v-3.4a4.85 4.85 0 0 1-1.04-.1z"/>
+                  </svg>
+                  <span className="text-sm text-gray-600 group-hover:text-white">TikTok</span>
                 </a>
               </div>
             </div>
           </motion.div>
         </div>
       </div>
-
-      {/* FAQ Section */}
-      <section className="bg-gray-50 py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-accent/10 border border-accent/20 mb-6">
-              <MessageCircle className="w-4 h-4 text-accent" />
-              <span className="text-accent text-sm font-medium">FAQ</span>
-            </div>
-            <h2 className="font-serif text-4xl font-bold text-foreground mb-4">
-              Frequently Asked Questions
-            </h2>
-            <div className="w-20 h-0.5 bg-accent mx-auto" />
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {faqs.map((faq, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                viewport={{ once: true }}
-                className="bg-white rounded-xl p-6 shadow-sm hover:shadow-md transition-all group"
-              >
-                <h3 className="font-semibold text-foreground mb-2 group-hover:text-accent transition-colors">
-                  {faq.q}
-                </h3>
-                <p className="text-muted-foreground text-sm leading-relaxed">
-                  {faq.a}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

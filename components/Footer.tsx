@@ -218,16 +218,6 @@ export default function Footer() {
             <span className="text-accent/60"> Crafted with elegance</span>
           </p>
 
-          {/* Payment Methods */}
-          <div className="flex gap-2">
-            <span className="text-white/30 text-xs">We accept:</span>
-            <div className="flex gap-1">
-              <span className="px-2 py-1 bg-white/5 rounded text-xs text-white/50">VISA</span>
-              <span className="px-2 py-1 bg-white/5 rounded text-xs text-white/50">Mastercard</span>
-              <span className="px-2 py-1 bg-white/5 rounded text-xs text-white/50">PayPal</span>
-              <span className="px-2 py-1 bg-white/5 rounded text-xs text-white/50">AMEX</span>
-            </div>
-          </div>
 
           {/* Legal Links */}
           <div className="flex gap-6 text-sm">

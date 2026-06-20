@@ -23,7 +23,6 @@ interface Product {
   isNew: boolean;
   isFeatured: boolean;
   description: string;
-  // NEW FIELDS
   isSold?: boolean;
   status?: string;
   soldDate?: string | null;
@@ -54,7 +53,7 @@ export default function ShopPage() {
             id: p.id || p._id,
             _id: p._id,
             name: p.name,
-            price: p.price / 1000, // Convert from 450000 to 450 for display
+            price: p.price / 1000,
             originalPrice: p.originalPrice ? p.originalPrice / 1000 : null,
             category: p.category,
             rating: p.rating || 5,
@@ -69,7 +68,6 @@ export default function ShopPage() {
             isNew: p.isNew || !p.originalPrice,
             isFeatured: p.isFeatured || false,
             description: p.description,
-            // NEW FIELDS
             isSold: p.isSold || false,
             status: p.status || 'available',
             soldDate: p.soldDate || null,
@@ -125,11 +123,11 @@ export default function ShopPage() {
     setFilteredProducts(result);
   }, [products, selectedCategory, sortBy, priceRange]);
 
+  // Filter out Accessories category from the list
   const categories = [
     { id: 'all', name: 'All Products', count: products.length },
     { id: 'Evening-Wear', name: 'Evening Wear', count: products.filter(p => p.category === 'Evening Wear').length },
     { id: 'Casual-Chic', name: 'Casual Chic', count: products.filter(p => p.category === 'Casual Chic').length },
-    { id: 'Accessories', name: 'Accessories', count: products.filter(p => p.category === 'Accessories').length },
   ];
 
   const toggleFavorite = (e: React.MouseEvent, id: string) => {
@@ -151,7 +149,6 @@ export default function ShopPage() {
     switch(category) {
       case 'Evening Wear': return 'from-amber-400/20 to-rose-400/20';
       case 'Casual Chic': return 'from-rose-400/20 to-amber-400/20';
-      case 'Accessories': return 'from-gray-600/20 to-amber-400/20';
       default: return 'from-gray-400/20 to-amber-400/20';
     }
   };
@@ -263,9 +260,6 @@ export default function ShopPage() {
                     <LayoutGrid size={16} />
                   </button>
                 </div>
-                <p className="text-sm text-gray-500">
-                  Showing <span className="font-semibold text-foreground">{filteredProducts.length}</span> products
-                </p>
               </div>
 
               <div className="flex items-center gap-3">
