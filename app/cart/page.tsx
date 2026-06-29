@@ -10,9 +10,10 @@ export default function CartPage() {
   const { items: cartItems, isLoading, updateQuantity, removeFromCart } = useCart();
 
   const subtotal = cartItems.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.1;
-  const shipping = subtotal > 150000 ? 0 : cartItems.length ? 2500 : 0;
-  const total = subtotal + tax + shipping;
+  // REMOVED: tax and shipping calculations
+  // const tax = subtotal * 0.1;
+  // const shipping = subtotal > 150000 ? 0 : cartItems.length ? 2500 : 0;
+  const total = subtotal; // Now total is just the subtotal
 
   return (
     <div className="pt-32 pb-20 bg-background">
@@ -118,20 +119,18 @@ export default function CartPage() {
                   <span>Subtotal</span>
                   <span>{displayNaira(subtotal)}</span>
                 </div>
-                <div className="flex justify-between text-foreground/70">
-                  <span>Tax (10%)</span>
-                  <span>{displayNaira(tax)}</span>
-                </div>
-                <div className="flex justify-between text-foreground/70">
-                  <span>Shipping</span>
-                  <span>{shipping === 0 ? 'Free' : displayNaira(shipping)}</span>
-                </div>
+                {/* REMOVED: Tax and Shipping sections */}
               </div>
 
               <div className="flex justify-between items-center mb-6">
                 <span className="font-serif text-lg font-bold text-foreground">Total</span>
                 <span className="font-serif text-2xl font-bold text-accent">{displayNaira(total)}</span>
               </div>
+
+              {/* Added delivery fee note */}
+              <p className="text-sm text-gray-500 text-center mb-4">
+                * Delivery fee will be paid to the delivery person upon arrival
+              </p>
 
               <Link
                 href="/checkout"

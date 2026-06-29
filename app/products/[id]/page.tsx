@@ -359,33 +359,34 @@ function ProductDetailContent({ id }: { id: string }) {
             </div>
 
             {/* Price */}
-            <div className="border-t border-b border-gray-100 py-6">
-              <div className="flex items-baseline gap-3 flex-wrap">
-                <span className={`text-4xl font-bold ${
-                  isProductSold ? 'text-gray-400' : 'text-foreground'
-                }`}>
-                  {displayNaira(totalPrice)}
-                </span>
-                {totalOriginalPrice && !isProductSold && (
-                  <>
-                    <span className="text-xl text-gray-400 line-through">
-                      {displayNaira(totalOriginalPrice)}
-                    </span>
-                    <span className="text-accent font-medium">
-                      Save {displayNaira(totalSavings)}
-                    </span>
-                  </>
-                )}
-              </div>
-              {quantity > 1 && !isProductSold && (
-                <p className="text-sm text-gray-400 mt-1">
-                  Unit price: {displayNaira(unitPrice)}
-                </p>
-              )}
-              <p className="text-sm text-gray-500 mt-2">
-                {isProductSold ? 'This item is no longer available for purchase.' : 'Tax included. Free shipping on orders over ₦500,000'}
-              </p>
-            </div>
+            {/* Price */}
+<div className="border-t border-b border-gray-100 py-6">
+  <div className="flex items-baseline gap-3 flex-wrap">
+    <span className={`text-4xl font-bold ${
+      isProductSold ? 'text-gray-400' : 'text-foreground'
+    }`}>
+      {displayNaira(totalPrice)}
+    </span>
+    {totalOriginalPrice && !isProductSold && (
+      <>
+        <span className="text-xl text-gray-400 line-through">
+          {displayNaira(totalOriginalPrice)}
+        </span>
+        {/* <span className="text-accent font-medium">
+          Save {displayNaira(totalSavings)}
+        </span> */}
+      </>
+    )}
+  </div>
+  {quantity > 1 && !isProductSold && (
+    <p className="text-sm text-gray-400 mt-1">
+      Unit price: {displayNaira(unitPrice)}
+    </p>
+  )}
+  <p className="text-sm text-gray-500 mt-2">
+    {isProductSold ? 'This item is no longer available for purchase.' : 'Pay for the product online. Delivery fee is paid on delivery.'}
+  </p>
+</div>
 
             {/* Subtotal preview */}
             {quantity > 1 && !isProductSold && (
