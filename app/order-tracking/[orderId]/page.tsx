@@ -210,7 +210,7 @@ export default function OrderTrackingPage() {
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.2 }}
         >
-          {/* Order Info */}
+          {/* Order Info - UPDATED */}
           <div className="bg-card rounded-lg border border-border p-6">
             <h3 className="font-semibold text-foreground mb-4 flex items-center gap-2">
               <Package className="w-5 h-5" />
@@ -226,12 +226,37 @@ export default function OrderTrackingPage() {
                 <span>{new Date(order.createdAt).toLocaleDateString()}</span>
               </div>
               <div className="flex justify-between">
-                <span className="text-foreground/60">Total:</span>
-                <span className="font-bold">{displayNaira(order.total)}</span>
+                <span className="text-foreground/60">Items:</span>
+                <span>{order.items?.length || 0} items</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-foreground/60">Payment:</span>
-                <span className="capitalize">{order.paymentMethod}</span>
+                <span className="capitalize">{order.paymentMethod || 'Bank Transfer'}</span>
+              </div>
+              {/* UPDATED: Show total paid online */}
+              <div className="border-t border-border pt-2 mt-2">
+                <div className="flex justify-between">
+                  <span className="text-foreground/60">Subtotal:</span>
+                  <span>{displayNaira(order.subtotal || 0)}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-foreground/60">Tax:</span>
+                  <span>{displayNaira(order.tax || 0)}</span>
+                </div>
+                <div className="flex justify-between font-bold text-foreground pt-1 border-t border-border mt-1">
+                  <span>Total Paid Online:</span>
+                  <span>{displayNaira(order.total || 0)}</span>
+                </div>
+                {/* Delivery notice */}
+                <div className="mt-3 p-2 bg-yellow-50 border border-yellow-200 rounded-lg">
+                  <div className="flex items-start gap-2">
+                    <Truck className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+                    <p className="text-xs text-yellow-800">
+                      <span className="font-semibold">Delivery Fee:</span> Paid in cash upon arrival. 
+                      Not included in online payment.
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
@@ -258,6 +283,13 @@ export default function OrderTrackingPage() {
               <div className="flex items-center gap-2">
                 <Mail className="w-4 h-4 text-foreground/60" />
                 <span className="text-foreground/60">{order.shippingAddress?.email}</span>
+              </div>
+              {/* Added delivery note */}
+              <div className="mt-3 pt-3 border-t border-border">
+                <div className="flex items-center gap-2 text-xs text-foreground/60">
+                  <Truck className="w-3 h-3" />
+                  <span>Delivery fee will be collected upon arrival</span>
+                </div>
               </div>
             </div>
           </div>

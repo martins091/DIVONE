@@ -220,11 +220,21 @@ export async function sendOrderCreatedEmails(order: OrderForEmail) {
     <p style="margin:0 0 16px;color:#374151;line-height:1.6;">Hi ${escapeHtml(getCustomerName(order))}, we received your order <strong>${escapeHtml(orderNumber)}</strong>. Please complete your bank transfer, then submit your payment confirmation from the payment page.</p>
     ${trackingUrl ? `<p style="margin:0 0 20px;"><a href="${escapeHtml(trackingUrl)}" style="display:inline-block;background:#111827;color:#ffffff;text-decoration:none;padding:12px 18px;border-radius:6px;font-weight:600;">Track order</a></p>` : ''}
     ${orderItemsHtml(order)}
+    
+    <!-- UPDATED: Removed shipping fee, added delivery payment notice -->
     <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="margin-top:18px;">
       <tr><td style="padding:4px 0;color:#6b7280;">Subtotal</td><td align="right" style="padding:4px 0;">${escapeHtml(formatNaira(order.subtotal))}</td></tr>
-      <tr><td style="padding:4px 0;color:#6b7280;">Shipping</td><td align="right" style="padding:4px 0;">${escapeHtml(formatNaira(order.shipping))}</td></tr>
-      <tr><td style="padding:10px 0 0;font-weight:700;font-size:18px;">Total</td><td align="right" style="padding:10px 0 0;font-weight:700;font-size:18px;">${escapeHtml(formatNaira(order.total))}</td></tr>
+      <!-- Shipping fee line REMOVED -->
+      <tr><td style="padding:10px 0 0;font-weight:700;font-size:18px;">Total</td><td align="right" style="padding:10px 0 0;font-weight:700;font-size:18px;">${escapeHtml(formatNaira(order.subtotal))}</td></tr>
     </table>
+
+    <!-- Delivery payment notice -->
+    <div style="margin-top:20px;padding:16px;background-color:#fef3c7;border-left:4px solid #f59e0b;border-radius:4px;">
+      <p style="margin:0;color:#92400e;font-size:14px;line-height:1.5;">
+        <strong>📦 Delivery Payment:</strong> Please note that the delivery fee will be paid 
+        directly to the delivery person upon arrival. This fee is not included in your online payment.
+      </p>
+    </div>
   `;
 
   const adminBody = `
@@ -232,6 +242,15 @@ export async function sendOrderCreatedEmails(order: OrderForEmail) {
     <p style="margin:0 0 16px;color:#374151;line-height:1.6;"><strong>${escapeHtml(orderNumber)}</strong> was placed by ${escapeHtml(getCustomerName(order))} (${escapeHtml(customerEmail || 'No email')}).</p>
     <p style="margin:0 0 16px;color:#374151;line-height:1.6;">Total: <strong>${escapeHtml(formatNaira(order.total))}</strong></p>
     ${orderItemsHtml(order)}
+    <!-- Admin email shows shipping info for reference -->
+    <div style="margin-top:16px;padding:12px;background-color:#f3f4f6;border-radius:4px;">
+      <p style="margin:0;color:#374151;font-size:13px;">
+        <strong>Shipping Address:</strong><br />
+        ${escapeHtml(getShippingAddress(order).street || '')}<br />
+        ${escapeHtml(getShippingAddress(order).city || '')}, ${escapeHtml(getShippingAddress(order).state || '')}<br />
+        Phone: ${escapeHtml(getShippingAddress(order).phone || 'No phone')}
+      </p>
+    </div>
   `;
 
   await Promise.all([

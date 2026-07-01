@@ -4,7 +4,7 @@ import { Suspense, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
-import { Copy, CheckCircle, Upload, AlertCircle, ArrowRight, Clock, Banknote, User, Mail, Phone, MapPin } from 'lucide-react';
+import { Copy, CheckCircle, Upload, AlertCircle, ArrowRight, Clock, Banknote, User, Mail, Phone, MapPin, Truck } from 'lucide-react';
 import { displayNaira } from '@/lib/currency';
 import { supabase } from '@/lib/supabase/client';
 
@@ -263,24 +263,25 @@ function PaymentContent() {
                 <span>Subtotal:</span>
                 <span className="text-foreground">{displayNaira(orderData?.subtotal || 0)}</span>
               </div>
-              <div className="flex justify-between text-foreground/70">
-                <span>Tax:</span>
-                <span className="text-foreground">{displayNaira(orderData?.tax || 0)}</span>
-              </div>
-              <div className="flex justify-between text-foreground/70">
-                <span>Shipping:</span>
-                <span className="text-foreground">
-                  {orderData?.shipping === 0 ? 'Free' : displayNaira(orderData?.shipping || 0)}
-                </span>
-              </div>
+              {/* Tax row REMOVED */}
             </div>
           </div>
           
-          <div className="border-t border-border mt-6 pt-6 flex justify-between items-center">
-            <span className="font-serif text-lg font-bold text-foreground">Total Amount</span>
-            <span className="font-serif text-3xl font-bold text-accent">
-              {displayNaira(total)}
-            </span>
+          <div className="border-t border-border mt-6 pt-6">
+            <div className="flex justify-between items-center">
+              <span className="font-serif text-lg font-bold text-foreground">Total to Pay Online</span>
+              <span className="font-serif text-3xl font-bold text-accent">
+                {displayNaira(total)}
+              </span>
+            </div>
+            {/* Delivery payment notice */}
+            <div className="mt-3 flex items-start gap-2 bg-yellow-50 border border-yellow-200 rounded-lg p-3">
+              <Truck className="w-4 h-4 text-yellow-600 flex-shrink-0 mt-0.5" />
+              <p className="text-xs text-yellow-800">
+                <span className="font-semibold">📦 Delivery Fee:</span> The delivery fee will be paid in cash 
+                directly to the delivery person upon arrival. This fee is not included in your online payment.
+              </p>
+            </div>
           </div>
         </motion.div>
 
@@ -399,6 +400,13 @@ function PaymentContent() {
                   <li className="flex items-start gap-2">
                     <span className="text-accent font-bold">4.</span>
                     <span>You'll be redirected to track your order status</span>
+                  </li>
+                  <li className="flex items-start gap-2 text-yellow-700">
+                    <span className="text-accent font-bold">5.</span>
+                    <span className="flex items-center gap-1">
+                      <Truck className="w-4 h-4" />
+                      <strong>Remember:</strong> Delivery fee is paid in cash upon arrival
+                    </span>
                   </li>
                 </ul>
               </div>

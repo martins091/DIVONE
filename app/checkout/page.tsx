@@ -59,9 +59,8 @@ export default function CheckoutPage() {
         body: JSON.stringify({
           items,
           subtotal,
-          tax,
-          shipping,
-          total,
+          shipping: 0, // Set shipping to 0 since it's paid on delivery
+          total: subtotal, // Total without tax and shipping
           shippingAddress: {
             firstName: formData.firstName,
             lastName: formData.lastName,
@@ -95,9 +94,7 @@ export default function CheckoutPage() {
   };
 
   const subtotal = items.reduce((sum, item) => sum + item.price * item.quantity, 0);
-  const tax = subtotal * 0.1;
-  const shipping = subtotal > 150000 ? 0 : items.length ? 2500 : 0;
-  const total = subtotal + tax + shipping;
+  const total = subtotal; // Total without tax and shipping
 
   // If cart is empty, show empty state
   if (items.length === 0) {
@@ -328,6 +325,20 @@ export default function CheckoutPage() {
                     </div>
                   </div>
 
+                  {/* Delivery Payment Notice */}
+                  <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div className="flex items-start gap-3">
+                      <Truck className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                      <div>
+                        <p className="text-sm font-medium text-yellow-800">Delivery Fee Payment</p>
+                        <p className="text-xs text-yellow-700 mt-1">
+                          The delivery fee will be paid in cash directly to the delivery person upon arrival. 
+                          This fee is not included in your online payment.
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
                   {/* Order Summary for Mobile */}
                   <div className="lg:hidden bg-gray-50 rounded-lg p-6 mt-6">
                     <h3 className="font-serif text-lg font-bold text-foreground mb-4">Order Summary</h3>
@@ -337,17 +348,16 @@ export default function CheckoutPage() {
                         <span>{displayNaira(subtotal)}</span>
                       </div>
                       <div className="flex justify-between text-foreground/70">
-                        <span>Tax</span>
-                        <span>{displayNaira(tax)}</span>
-                      </div>
-                      <div className="flex justify-between text-foreground/70">
-                        <span>Shipping</span>
-                        <span>{shipping === 0 ? 'Free' : displayNaira(shipping)}</span>
+                        <span>Delivery</span>
+                        <span className="text-yellow-600 font-medium">Pay on delivery</span>
                       </div>
                     </div>
                     <div className="border-t border-gray-200 pt-4 flex justify-between">
-                      <span className="font-bold text-foreground">Total</span>
+                      <span className="font-bold text-foreground">Total to Pay Online</span>
                       <span className="text-xl font-bold text-accent">{displayNaira(total)}</span>
+                    </div>
+                    <div className="mt-2 text-xs text-foreground/50 text-center">
+                      + Delivery fee paid in cash upon arrival
                     </div>
                   </div>
 
@@ -376,7 +386,7 @@ export default function CheckoutPage() {
                     </div>
                     <div className="flex items-center gap-1">
                       <Truck size={14} />
-                      Free Shipping over ₦150,000
+                      Pay delivery on arrival
                     </div>
                     <div className="flex items-center gap-1">
                       <Clock size={14} />
@@ -435,30 +445,28 @@ export default function CheckoutPage() {
                   <span>{displayNaira(subtotal)}</span>
                 </div>
                 <div className="flex justify-between text-foreground/70">
-                  <span>Tax (10%)</span>
-                  <span>{displayNaira(tax)}</span>
-                </div>
-                <div className="flex justify-between text-foreground/70">
-                  <span>Shipping</span>
-                  <span className={shipping === 0 ? 'text-accent font-medium' : ''}>
-                    {shipping === 0 ? 'Free' : displayNaira(shipping)}
-                  </span>
+                  <span>Delivery</span>
+                  <span className="text-yellow-600 font-medium">Pay on delivery</span>
                 </div>
               </div>
 
-              <div className="flex justify-between items-center mb-6">
-                <span className="font-serif text-lg font-bold text-foreground">Total</span>
+              <div className="flex justify-between items-center mb-4">
+                <span className="font-serif text-lg font-bold text-foreground">Total to Pay Online</span>
                 <span className="font-serif text-2xl font-bold text-accent">
                   {displayNaira(total)}
                 </span>
               </div>
 
-              <div className="bg-accent/5 rounded-lg p-4 border border-accent/20">
+              <div className="text-xs text-foreground/50 text-center mb-6">
+                + Delivery fee paid in cash upon arrival
+              </div>
+
+              <div className="bg-yellow-50 rounded-lg p-4 border border-yellow-200">
                 <div className="flex items-start gap-3">
-                  <Shield className="w-5 h-5 text-accent flex-shrink-0 mt-0.5" />
-                  <div className="text-xs text-foreground/70">
-                    <p className="font-semibold text-foreground">Secure Payment</p>
-                    <p>Your payment information is encrypted and secure.</p>
+                  <Truck className="w-5 h-5 text-yellow-600 flex-shrink-0 mt-0.5" />
+                  <div className="text-xs text-yellow-800">
+                    <p className="font-semibold">Delivery on Arrival</p>
+                    <p>The delivery fee will be paid directly to the delivery person when your order arrives.</p>
                   </div>
                 </div>
               </div>
